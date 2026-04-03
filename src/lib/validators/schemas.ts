@@ -20,11 +20,11 @@ export const jobSchema = z.object({
   type: z.enum(["full-time", "part-time", "contract", "internship"]),
   description: z.string().min(10, "Description must be at least 10 characters"),
   requirements: z.object({
-    skills: z.array(z.string()).min(1, "At least one skill is required"),
+    skills: z.array(z.string()).min(1, "At least one skill is required").max(30, "Maximum 30 skills allowed"),
     experience: z.object({
       min: z.number().min(0).default(0),
       max: z.number().min(0).default(20),
-    }),
+    }).refine((e) => e.min <= e.max, { message: "Minimum experience must not exceed maximum" }),
     education: z.string().optional().default(""),
     certifications: z.array(z.string()).optional().default([]),
     languages: z.array(z.string()).optional().default([]),
@@ -50,7 +50,10 @@ export const jobSchema = z.object({
     weightExperience: z.number().min(0).max(100).default(30),
     weightEducation: z.number().min(0).max(100).default(20),
     weightCultureFit: z.number().min(0).max(100).default(10),
-  }),
+  }).refine(
+    (c) => c.weightSkills + c.weightExperience + c.weightEducation + c.weightCultureFit === 100,
+    { message: "Screening weights must sum to 100" }
+  ),
 });
 
 export const candidateProfileSchema = z.object({
@@ -119,8 +122,20 @@ export const recruiterDecisionSchema = z.object({
   decision: z.enum(["pending", "shortlisted", "rejected", "interview"]),
 });
 
+export const aiRankingResponseSchema = z.object({
+  rankings: z.array(
+    z.object({
+      candidateId: z.string(),
+      rank: z.number().int().min(1),
+      adjustedScore: z.number().min(0).max(100),
+      adjustmentReason: z.string().optional().default(""),
+    })
+  ),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type JobInput = z.infer<typeof jobSchema>;
 export type CandidateProfileInput = z.infer<typeof candidateProfileSchema>;
 export type AIScoringResponse = z.infer<typeof aiScoringResponseSchema>;
+export type AIRankingResponse = z.infer<typeof aiRankingResponseSchema>;

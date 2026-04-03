@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ProgressBar, ScoreBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { ScoreDistributionChart } from "@/components/screening/ScoreDistributionChart";
 import {
   Brain,
   Play,
@@ -105,10 +107,7 @@ export default function ResultsPage() {
     if (resultsData.success) {
       setSession(resultsData.data.session);
       setResults(resultsData.data.results);
-      // Auto-expand #1 candidate so AI explanation is immediately visible
-      if (resultsData.data.results.length > 0 && !expandedRow) {
-        setExpandedRow(resultsData.data.results[0]._id);
-      }
+      // Results loaded — auto-expand handled by separate useEffect
     }
     if (jobData.success) setJob(jobData.data);
     setLoading(false);
@@ -121,6 +120,14 @@ export default function ResultsPage() {
     const interval = setInterval(loadResults, 3000);
     return () => clearInterval(interval);
   }, [session, loadResults]);
+
+  // Fix #5: Auto-expand first candidate in separate effect (no stale closure)
+  useEffect(() => {
+    if (results.length > 0 && expandedRow === null) {
+      setExpandedRow(results[0]._id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
 
   const triggerScreening = async () => {
     setTriggerLoading(true);
@@ -183,7 +190,7 @@ export default function ResultsPage() {
   if (loading) return <AppLayout><PageLoader /></AppLayout>;
 
   const isScreening = session && ["pending", "processing"].includes(session.status);
-  const topCandidate = results[0];
+  const topCandidate = results.length > 0 ? results[0] : null;
 
   return (
     <AppLayout>
@@ -257,6 +264,13 @@ export default function ResultsPage() {
           </Card>
         )}
 
+        {/* Responsible AI Notice */}
+        {results.length > 0 && !isScreening && (
+          <div className="mb-4">
+            <AIDisclaimer compact />
+          </div>
+        )}
+
         {/* Stats bar when results exist */}
         {results.length > 0 && !isScreening && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -277,6 +291,16 @@ export default function ResultsPage() {
               <p className="text-xs text-gray-500">Avg AI Confidence</p>
             </Card>
           </div>
+        )}
+
+        {/* Score Distribution Chart */}
+        {results.length > 1 && !isScreening && (
+          <Card className="mb-6">
+            <ScoreDistributionChart
+              candidates={results.map((r) => ({ name: r.candidateName, score: r.overallScore, rank: r.rank }))}
+              shortlistSize={job?.screeningConfig.shortlistSize || 10}
+            />
+          </Card>
         )}
 
         {/* Why #1 highlight */}
@@ -495,6 +519,15 @@ export default function ResultsPage() {
               title="No screening results"
               description="Run AI screening to analyze and rank your candidates."
               action={{ label: "Run Screening", onClick: triggerScreening }}
+            />
+          </Card>
+        ) : filteredResults.length === 0 && results.length > 0 ? (
+          <Card>
+            <EmptyState
+              icon={Filter}
+              title="No candidates match your filters"
+              description={`${results.length} candidates were screened, but none match the current filter settings. Try adjusting the minimum score or match type.`}
+              action={{ label: "Reset Filters", onClick: () => { setMinScore(0); setMatchFilter("all"); setSortBy("rank"); } }}
             />
           </Card>
         ) : filteredResults.length > 0 && (

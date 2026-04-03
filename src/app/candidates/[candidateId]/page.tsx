@@ -10,6 +10,9 @@ import { Badge, StatusBadge } from "@/components/ui/Badge";
 import { ScoreBar } from "@/components/ui/ProgressBar";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ArrowLeft, Mail, Phone, MapPin, Globe, Link as LinkIcon, Award, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { ErrorBanner } from "@/components/shared/ErrorBanner";
+import { SkillRadarChart } from "@/components/screening/SkillRadarChart";
 import type { Candidate } from "@/types/candidate";
 import type { ScreeningResult } from "@/types/screening";
 
@@ -22,17 +25,21 @@ export default function CandidateDetailPage() {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [result, setResult] = useState<ScreeningResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [decisionLoading, setDecisionLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/candidates/${candidateId}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Failed to load candidate"); return r.json(); })
       .then((d) => {
         if (d.success) {
           setCandidate(d.data.candidate);
           setResult(d.data.screeningResult);
+        } else {
+          setError(d.error || "Candidate not found");
         }
       })
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [candidateId]);
 
@@ -50,7 +57,8 @@ export default function CandidateDetailPage() {
     setDecisionLoading(false);
   };
 
-  if (loading || !candidate) return <AppLayout><PageLoader /></AppLayout>;
+  if (loading) return <AppLayout><PageLoader /></AppLayout>;
+  if (error || !candidate) return <AppLayout><div className="max-w-4xl mx-auto"><ErrorBanner message={error || "Candidate not found"} onRetry={() => window.location.reload()} /></div></AppLayout>;
 
   const p = candidate.profile;
 
@@ -89,6 +97,13 @@ export default function CandidateDetailPage() {
             </div>
           )}
         </div>
+
+        {/* Responsible AI Notice */}
+        {result && (
+          <div className="mb-6">
+            <AIDisclaimer />
+          </div>
+        )}
 
         {/* Human Decision Controls */}
         {result && (
@@ -134,6 +149,7 @@ export default function CandidateDetailPage() {
             <div className="space-y-6">
               <Card>
                 <CardTitle>Score Breakdown</CardTitle>
+                <SkillRadarChart breakdown={result.breakdown} />
                 <div className="mt-3 space-y-3">
                   <ScoreBar score={result.breakdown.skillsMatch} label="Skills Match" />
                   <ScoreBar score={result.breakdown.experienceMatch} label="Experience" />

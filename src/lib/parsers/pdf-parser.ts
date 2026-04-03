@@ -7,7 +7,8 @@ export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const pdf = require("pdf-parse");
   const data = await pdf(buffer);
-  return data.text.replace(/\s+/g, " ").trim();
+  // Preserve newlines for resume structure, collapse only runs of spaces/tabs
+  return data.text.replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 export async function parseResumeWithAI(

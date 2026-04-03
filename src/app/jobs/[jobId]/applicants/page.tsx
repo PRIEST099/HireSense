@@ -11,7 +11,7 @@ import { Input, TextArea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Users, Upload, UserPlus, FileSpreadsheet, FileText, CheckCircle, AlertCircle, X } from "lucide-react";
+import { Users, Upload, UserPlus, FileSpreadsheet, FileText, CheckCircle, AlertCircle, X, Link as LinkIcon } from "lucide-react";
 import type { Candidate } from "@/types/candidate";
 
 export default function ApplicantsPage() {
@@ -21,11 +21,16 @@ export default function ApplicantsPage() {
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"list" | "add" | "upload">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "add" | "upload" | "url">("list");
 
   // Add candidate form
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", location: "", summary: "", skills: "" });
   const [addLoading, setAddLoading] = useState(false);
+
+  // Resume URL state
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlResult, setUrlResult] = useState<string | null>(null);
 
   // Upload state
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -56,6 +61,29 @@ export default function ApplicantsPage() {
       loadCandidates();
     }
     setAddLoading(false);
+  };
+
+  const handleResumeUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resumeUrl.trim()) return;
+    setUrlLoading(true);
+    setUrlResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("resumeUrl", resumeUrl.trim());
+      const res = await fetch(`/api/jobs/${jobId}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setUrlResult(`Candidate imported from URL successfully`);
+        setResumeUrl("");
+        loadCandidates();
+      } else {
+        setUrlResult(`Error: ${data.error}`);
+      }
+    } catch {
+      setUrlResult("Failed to fetch resume from URL");
+    }
+    setUrlLoading(false);
   };
 
   const onDrop = useCallback(async (files: File[]) => {
@@ -100,6 +128,9 @@ export default function ApplicantsPage() {
             <Button variant={activeTab === "upload" ? "primary" : "outline"} size="sm" onClick={() => setActiveTab("upload")}>
               <Upload className="h-4 w-4" /> Upload
             </Button>
+            <Button variant={activeTab === "url" ? "primary" : "outline"} size="sm" onClick={() => setActiveTab("url")}>
+              <LinkIcon className="h-4 w-4" /> Resume URL
+            </Button>
           </div>
         </div>
 
@@ -111,11 +142,11 @@ export default function ApplicantsPage() {
               <button onClick={() => setActiveTab("list")} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={handleAddCandidate} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Full Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                 <Input label="Email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                 <Input label="Location" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
               </div>
@@ -126,6 +157,37 @@ export default function ApplicantsPage() {
                 <Button type="submit" loading={addLoading}>Add Candidate</Button>
               </div>
             </form>
+          </Card>
+        )}
+
+        {/* Resume URL section */}
+        {activeTab === "url" && (
+          <Card className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <CardTitle>Import from Resume URL</CardTitle>
+              <button onClick={() => setActiveTab("list")} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={handleResumeUrl} className="space-y-4">
+              <Input
+                label="Resume URL (PDF link)"
+                value={resumeUrl}
+                onChange={(e) => setResumeUrl(e.target.value)}
+                placeholder="https://example.com/resume.pdf"
+                type="url"
+                required
+              />
+              <p className="text-xs text-gray-400">Paste a direct link to a PDF resume. The system will fetch, parse, and extract candidate data using AI.</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setActiveTab("list")} type="button">Cancel</Button>
+                <Button type="submit" loading={urlLoading}>Import from URL</Button>
+              </div>
+            </form>
+            {urlResult && (
+              <div className={`mt-3 flex items-center gap-2 text-sm ${urlResult.startsWith("Error") ? "text-red-600" : "text-green-600"}`}>
+                {urlResult.startsWith("Error") ? <AlertCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                {urlResult}
+              </div>
+            )}
           </Card>
         )}
 
@@ -192,7 +254,7 @@ export default function ApplicantsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium text-sm">
-                      {c.profile.name.charAt(0).toUpperCase()}
+                      {(c.profile.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{c.profile.name}</p>

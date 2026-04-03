@@ -31,7 +31,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          image: user.company,
+          image: user.company, // NextAuth User type lacks custom fields; repurpose image to carry company through JWT
         };
       },
     }),

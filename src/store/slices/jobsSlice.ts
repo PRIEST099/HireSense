@@ -83,7 +83,7 @@ const jobsSlice = createSlice({
       .addCase(fetchJob.pending, (state) => { state.loading = true; })
       .addCase(fetchJob.fulfilled, (state, action) => { state.loading = false; state.currentJob = action.payload; })
       .addCase(fetchJob.rejected, (state, action) => { state.loading = false; state.error = action.error.message || "Failed to fetch job"; })
-      .addCase(createJob.fulfilled, (state, action) => { state.items.unshift(action.payload); })
+      .addCase(createJob.fulfilled, (state, action) => { state.error = null; state.items.unshift(action.payload); })
       .addCase(updateJob.fulfilled, (state, action) => {
         const idx = state.items.findIndex((j) => j._id === action.payload._id);
         if (idx >= 0) state.items[idx] = action.payload;

@@ -32,11 +32,16 @@ export default function RegisterPage() {
       }
 
       // Auto-login after registration
-      await signIn("credentials", {
-        email: form.email,
-        password: form.password,
-        callbackUrl: "/dashboard",
-      });
+      try {
+        await signIn("credentials", {
+          email: form.email,
+          password: form.password,
+          callbackUrl: "/dashboard",
+        });
+      } catch {
+        setError("Account created. Please sign in manually.");
+        setLoading(false);
+      }
     } catch {
       setError("Something went wrong");
       setLoading(false);
@@ -44,7 +49,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 bg-grain">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center bg-blue-600 p-3 rounded-2xl mb-4">

@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Briefcase, Users, Brain, TrendingUp, Plus } from "lucide-react";
+import { Briefcase, Users, Brain, TrendingUp, Plus, Sparkles } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorBanner } from "@/components/shared/ErrorBanner";
 import type { Job } from "@/types/job";
 
 export default function DashboardPage() {
@@ -18,24 +19,30 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalCandidates: 0, screeningsRun: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/jobs");
-        const data = await res.json();
+        const [jobsRes, statsRes] = await Promise.all([
+          fetch("/api/jobs"),
+          fetch("/api/stats"),
+        ]);
+        if (!jobsRes.ok) throw new Error("Failed to load jobs");
+        const data = await jobsRes.json();
+        const statsData = statsRes.ok ? await statsRes.json() : { success: false };
         if (data.success) {
           const jobList = data.data as Job[];
           setJobs(jobList);
           setStats({
             totalJobs: jobList.length,
             activeJobs: jobList.filter((j) => j.status === "open" || j.status === "screening").length,
-            totalCandidates: 0,
-            screeningsRun: jobList.filter((j) => j.status !== "draft").length,
+            totalCandidates: statsData.success ? statsData.data.totalCandidates : 0,
+            screeningsRun: statsData.success ? statsData.data.screeningsRun : jobList.filter((j) => j.status !== "draft").length,
           });
         }
       } catch {
-        // silent fail
+        setError("Failed to load dashboard data. Please try again.");
       }
       setLoading(false);
     }
@@ -59,6 +66,8 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-500 mt-1">Overview of your recruitment activity</p>
       </div>
+
+      {error && <div className="mb-6"><ErrorBanner message={error} onRetry={() => window.location.reload()} /></div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((stat) => (
@@ -88,9 +97,18 @@ export default function DashboardPage() {
           <EmptyState
             icon={Briefcase}
             title="No jobs yet"
-            description="Create your first job posting to start screening candidates with AI."
+            description="Create your first job posting or load demo data to see AI screening in action."
             action={{ label: "Create Job", onClick: () => router.push("/jobs/new") }}
           />
+          <div className="flex justify-center mt-2 pb-2">
+            <Button variant="outline" size="sm" onClick={async () => {
+              const res = await fetch("/api/seed", { method: "POST" });
+              const data = await res.json();
+              if (data.success) window.location.reload();
+            }}>
+              <Sparkles className="h-4 w-4" /> Load Demo Data
+            </Button>
+          </div>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -24,6 +24,9 @@ class TokenBucketRateLimiter {
     this.lastRefill = now;
   }
 
+  // NOTE: In-memory rate limiter works per-process only. On Vercel serverless,
+  // each function invocation gets its own instance. For shared rate limiting
+  // at scale, use Redis (e.g., @upstash/ratelimit).
   async acquire(): Promise<void> {
     this.refill();
 

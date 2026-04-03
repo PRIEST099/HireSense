@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUserId } from "@/lib/utils/auth-helpers";
 import dbConnect from "@/lib/db/mongodb";
 import Job from "@/lib/db/models/Job";
 import { jobSchema } from "@/lib/validators/schemas";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = await getAuthUserId();
+    if (!userId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     await dbConnect();
-    const userId = (session.user as Record<string, unknown>).id as string;
-    const jobs = await Job.find({ userId }).sort({ createdAt: -1 }).lean();
+    const jobs = await Job.find({ userId }).sort({ createdAt: -1 }).limit(200).lean();
 
     return NextResponse.json({ success: true, data: jobs });
   } catch (error) {
@@ -24,10 +21,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = await getAuthUserId();
+    if (!userId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
     const parsed = jobSchema.safeParse(body);
@@ -40,7 +35,6 @@ export async function POST(req: NextRequest) {
     }
 
     await dbConnect();
-    const userId = (session.user as Record<string, unknown>).id as string;
 
     const job = await Job.create({ ...parsed.data, userId });
 

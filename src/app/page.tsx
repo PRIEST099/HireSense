@@ -508,7 +508,7 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-grain">
       <Navbar />
       <Hero />
       <TrustBar />

@@ -1,6 +1,7 @@
 import { generateJSON } from "./provider";
 import { buildRankingPrompt, PROMPT_VERSION } from "./prompts";
 import { scoreCandidatesBatch, type ScoringOutput } from "./scorer";
+import { aiRankingResponseSchema } from "@/lib/validators/schemas";
 import { withRetry } from "@/lib/utils/rate-limiter";
 import dbConnect from "@/lib/db/mongodb";
 import Job, { type IJob } from "@/lib/db/models/Job";
@@ -66,26 +67,36 @@ export async function runScreeningPipeline(sessionId: string): Promise<void> {
     );
 
     let rankingProvider = "unknown";
-    const rankingResult = await withRetry(async () => {
-      const response = await generateJSON(rankingPrompt, "smart");
-      rankingProvider = `${response.provider}/${response.model}`;
-      console.log(`[AI Orchestrator] Ranking via ${rankingProvider}`);
-      return JSON.parse(response.text);
-    });
+    let rankings: Array<{ candidateId: string; adjustedScore: number; rank: number }> = [];
 
-    // Delete previous results for this job
-    await ScreeningResult.deleteMany({ jobId: job._id });
+    try {
+      const rawRanking = await withRetry(async () => {
+        const response = await generateJSON(rankingPrompt, "smart");
+        rankingProvider = `${response.provider}/${response.model}`;
+        console.log(`[AI Orchestrator] Ranking via ${rankingProvider}`);
+        return JSON.parse(response.text);
+      });
+
+      // Fix #3: Validate ranking response with Zod
+      const rankingParsed = aiRankingResponseSchema.safeParse(rawRanking);
+      if (rankingParsed.success) {
+        rankings = rankingParsed.data.rankings;
+      } else {
+        console.warn("[AI Orchestrator] Ranking validation failed, using score-based ordering:", rankingParsed.error);
+      }
+    } catch (rankingError) {
+      console.warn("[AI Orchestrator] Ranking stage failed, falling back to score-based ordering:", rankingError);
+    }
 
     // Determine which AI was used for scoring
     const scoringProvider = scoringResults[0]?.aiProvider
       ? `${scoringResults[0].aiProvider}/${scoringResults[0].aiModel}`
       : "unknown";
 
-    // Save results with final rankings
-    const rankings = rankingResult.rankings || [];
+    // Build result docs
     const resultDocs = scoringResults.map((scored: ScoringOutput) => {
       const ranking = rankings.find(
-        (r: { candidateId: string }) => r.candidateId === scored.candidateId
+        (r) => r.candidateId === scored.candidateId
       );
       const finalScore = ranking ? ranking.adjustedScore : scored.overallScore;
       const rank = ranking ? ranking.rank : 0;
@@ -109,10 +120,12 @@ export async function runScreeningPipeline(sessionId: string): Promise<void> {
       };
     });
 
-    // Sort by score and assign ranks if ranking stage failed
+    // Fix #22: Sort with tiebreaker for deterministic ordering
     resultDocs.sort(
-      (a: { overallScore: number }, b: { overallScore: number }) =>
-        b.overallScore - a.overallScore
+      (a: { overallScore: number; candidateId: string }, b: { overallScore: number; candidateId: string }) => {
+        if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
+        return a.candidateId.localeCompare(b.candidateId);
+      }
     );
     resultDocs.forEach(
       (doc: { rank: number }, idx: number) => {
@@ -120,6 +133,8 @@ export async function runScreeningPipeline(sessionId: string): Promise<void> {
       }
     );
 
+    // Fix #2: Delete AFTER building results, right before insert (atomic-ish swap)
+    await ScreeningResult.deleteMany({ jobId: job._id });
     await ScreeningResult.insertMany(resultDocs);
 
     // Update session

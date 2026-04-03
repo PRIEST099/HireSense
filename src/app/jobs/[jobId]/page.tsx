@@ -8,7 +8,8 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
-import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar } from "lucide-react";
+import { ErrorBanner } from "@/components/shared/ErrorBanner";
+import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar, Pencil } from "lucide-react";
 
 interface JobDetail {
   _id: string;
@@ -42,23 +43,29 @@ export default function JobDetailPage() {
   const router = useRouter();
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const jobId = params.jobId as string;
 
   useEffect(() => {
     fetch(`/api/jobs/${jobId}`)
-      .then((r) => r.json())
-      .then((d) => { if (d.success) setJob(d.data); })
+      .then((r) => { if (!r.ok) throw new Error("Failed to load job"); return r.json(); })
+      .then((d) => { if (d.success) setJob(d.data); else setError(d.error || "Job not found"); })
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [jobId]);
 
-  if (loading || !job) return <AppLayout><PageLoader /></AppLayout>;
+  if (loading) return <AppLayout><PageLoader /></AppLayout>;
+  if (error || !job) return <AppLayout><div className="max-w-4xl mx-auto"><ErrorBanner message={error || "Job not found"} onRetry={() => window.location.reload()} /></div></AppLayout>;
 
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-start justify-between mb-6">
           <div>
+            <Button variant="outline" size="sm" onClick={() => router.push(`/jobs/${jobId}/edit`)} className="mb-3">
+              <Pencil className="h-4 w-4" /> Edit Job
+            </Button>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
               <StatusBadge status={job.status} />
@@ -132,7 +139,7 @@ export default function JobDetailPage() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-700">Experience</p>
                 <p className="text-sm text-gray-500">{job.requirements.experience.min}-{job.requirements.experience.max} years</p>

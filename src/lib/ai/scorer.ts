@@ -47,7 +47,7 @@ export async function scoreCandidate(input: ScoringInput): Promise<ScoringOutput
     const response = await generateJSON(prompt, "fast");
     provider = response.provider;
     model = response.model;
-    console.log(`[AI Scorer] ${response.provider}/${response.model} response:`, response.text.slice(0, 300));
+    console.log(`[AI Scorer] ${response.provider}/${response.model} responded (${response.text.length} chars)`);
     const json = JSON.parse(response.text);
     return aiScoringResponseSchema.parse(json);
   });

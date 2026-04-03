@@ -84,11 +84,15 @@ export function parseCSV(csvText: string): { candidates: ParsedCandidate[]; erro
     }
 
     const skills = mapped.skills
-      ? mapped.skills.split(/[,;|]/).map((s) => ({
-          name: s.trim(),
-          level: "intermediate" as const,
-          yearsOfExperience: 0,
-        })).filter((s) => s.name)
+      ? mapped.skills
+          .split(/[,;|]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((name) => ({
+            name,
+            level: "intermediate" as const,
+            yearsOfExperience: 0,
+          }))
       : [];
 
     const education = mapped.education

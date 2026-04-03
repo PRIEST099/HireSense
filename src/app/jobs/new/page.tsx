@@ -132,11 +132,11 @@ export default function NewJobPage() {
             <CardTitle>Basic Information</CardTitle>
             <div className="space-y-4 mt-4">
               <Input label="Job Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Frontend Engineer" required />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Corp" required />
                 <Input label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Engineering" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Kigali, Rwanda" required />
                 <Select label="Job Type" value={type} onChange={(e) => setType(e.target.value)} options={JOB_TYPES} />
               </div>
@@ -179,7 +179,7 @@ export default function NewJobPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Min Experience (years)" type="number" value={expMin} onChange={(e) => setExpMin(Number(e.target.value))} min={0} />
                 <Input label="Max Experience (years)" type="number" value={expMax} onChange={(e) => setExpMax(Number(e.target.value))} min={0} />
               </div>

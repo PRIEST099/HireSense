@@ -99,6 +99,10 @@ const CandidateSchema = new Schema<ICandidate>(
 );
 
 CandidateSchema.index({ jobId: 1 });
+CandidateSchema.index(
+  { jobId: 1, "profile.email": 1 },
+  { unique: true, partialFilterExpression: { "profile.email": { $exists: true, $gt: "" } } }
+);
 
 const Candidate: Model<ICandidate> =
   mongoose.models.Candidate ||
