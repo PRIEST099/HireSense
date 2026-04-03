@@ -96,7 +96,14 @@ export function parseCSV(csvText: string): { candidates: ParsedCandidate[]; erro
       : [];
 
     const education = mapped.education
-      ? [{ degree: mapped.education, institution: "", field: "", graduationYear: 0 }]
+      ? (() => {
+          const parts = mapped.education.split(",").map((p) => p.trim());
+          const degree = parts[0] || mapped.education;
+          const institution = parts[1] || "";
+          const yearMatch = mapped.education.match(/\b(19|20)\d{2}\b/);
+          const graduationYear = yearMatch ? parseInt(yearMatch[0], 10) : 0;
+          return [{ degree, institution, field: "", graduationYear }];
+        })()
       : [];
 
     const certifications = mapped.certifications

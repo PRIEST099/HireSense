@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "HireSense AI - AI-Powered Talent Screening",
   description: "Screen, score, and shortlist candidates with AI while keeping humans in control of hiring decisions.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -49,7 +49,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 bg-grain">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50/60 via-transparent to-purple-50/60 px-4 bg-grain">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center bg-blue-600 p-3 rounded-2xl mb-4">

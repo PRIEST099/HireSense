@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const apiKey = process.env.GEMINI_API_KEY || "";
+
+// Lazy init — won't crash at import if key is missing, only on first use
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export const flashModel = genAI.getGenerativeModel({
   model: "gemini-2.0-flash",
@@ -17,5 +20,9 @@ export const proModel = genAI.getGenerativeModel({
     temperature: 0.2,
   },
 });
+
+export function isGeminiConfigured(): boolean {
+  return !!process.env.GEMINI_API_KEY;
+}
 
 export { genAI };
