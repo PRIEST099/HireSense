@@ -32,6 +32,8 @@ import {
   Star,
   MessageSquare,
   Eye,
+  GitCompareArrows,
+  X,
 } from "lucide-react";
 
 interface EnrichedResult {
@@ -91,6 +93,7 @@ export default function ResultsPage() {
   const [matchFilter, setMatchFilter] = useState<FilterMatch>("all");
   const [sortBy, setSortBy] = useState<SortField>("rank");
   const [showFilters, setShowFilters] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
 
   const loadResults = useCallback(async () => {
     const [resultsRes, jobRes] = await Promise.all([
@@ -102,6 +105,10 @@ export default function ResultsPage() {
     if (resultsData.success) {
       setSession(resultsData.data.session);
       setResults(resultsData.data.results);
+      // Auto-expand #1 candidate so AI explanation is immediately visible
+      if (resultsData.data.results.length > 0 && !expandedRow) {
+        setExpandedRow(resultsData.data.results[0]._id);
+      }
     }
     if (jobData.success) setJob(jobData.data);
     setLoading(false);
@@ -299,6 +306,109 @@ export default function ResultsPage() {
           </Card>
         )}
 
+        {/* Compare Top 3 Modal */}
+        {showCompare && results.length >= 2 && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCompare(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white rounded-t-2xl z-10">
+                <div className="flex items-center gap-2">
+                  <GitCompareArrows className="h-5 w-5 text-blue-600" />
+                  <h2 className="text-lg font-bold text-gray-900">Compare Top Candidates</h2>
+                </div>
+                <button onClick={() => setShowCompare(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className={`grid gap-4 ${results.slice(0, 3).length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                  {results.slice(0, 3).map((r) => (
+                    <div key={r._id} className={`rounded-xl border-2 p-5 ${r.rank === 1 ? "border-yellow-300 bg-yellow-50/30" : "border-gray-200"}`}>
+                      {/* Header */}
+                      <div className="text-center mb-4">
+                        <div className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center text-lg font-bold mb-2 ${
+                          r.rank === 1 ? "bg-yellow-100 text-yellow-700" : r.rank === 2 ? "bg-gray-100 text-gray-600" : "bg-orange-100 text-orange-600"
+                        }`}>
+                          {r.candidateName.charAt(0)}
+                        </div>
+                        <h3 className="font-bold text-gray-900">{r.candidateName}</h3>
+                        <div className="flex items-center justify-center gap-1 mt-1">
+                          <Trophy className={`h-4 w-4 ${r.rank === 1 ? "text-yellow-500" : r.rank === 2 ? "text-gray-400" : "text-orange-400"}`} />
+                          <span className="text-sm text-gray-500">Rank #{r.rank}</span>
+                        </div>
+                        <p className={`text-4xl font-bold mt-2 ${r.overallScore >= 80 ? "text-green-600" : r.overallScore >= 60 ? "text-blue-600" : "text-yellow-600"}`}>
+                          {r.overallScore}
+                        </p>
+                        <StatusBadge status={r.recommendation} />
+                      </div>
+
+                      {/* Score bars */}
+                      <div className="space-y-2.5 mb-4">
+                        {[
+                          { label: "Skills", score: r.breakdown.skillsMatch },
+                          { label: "Experience", score: r.breakdown.experienceMatch },
+                          { label: "Education", score: r.breakdown.educationMatch },
+                          { label: "Culture Fit", score: r.breakdown.cultureFitMatch },
+                        ].map((s) => (
+                          <div key={s.label}>
+                            <div className="flex justify-between mb-0.5">
+                              <span className="text-xs text-gray-500">{s.label}</span>
+                              <span className="text-xs font-bold text-gray-700">{s.score}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${s.score >= 70 ? "bg-green-500" : s.score >= 50 ? "bg-yellow-500" : "bg-red-400"}`}
+                                style={{ width: `${s.score}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Confidence */}
+                      <div className="flex items-center justify-between bg-purple-50 rounded-lg px-3 py-2 mb-4">
+                        <span className="text-xs font-medium text-purple-700">AI Confidence</span>
+                        <span className="text-sm font-bold text-purple-700">{r.confidenceScore}%</span>
+                      </div>
+
+                      {/* Strengths */}
+                      <div className="mb-3">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Strengths</p>
+                        <div className="space-y-1">
+                          {r.strengths.map((s, i) => (
+                            <div key={i} className="flex items-start gap-1.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs text-gray-700">{s}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Gaps */}
+                      <div className="mb-3">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Gaps</p>
+                        <div className="space-y-1">
+                          {r.gaps.map((g, i) => (
+                            <div key={i} className="flex items-start gap-1.5">
+                              <XCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs text-gray-700">{g}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Reasoning */}
+                      <div className="bg-blue-50 rounded-lg p-3">
+                        <p className="text-xs font-bold text-blue-700 mb-1">AI Reasoning</p>
+                        <p className="text-xs text-blue-800 leading-relaxed">{r.reasoning}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filters & Sort */}
         {results.length > 0 && (
           <div className="flex items-center justify-between mb-4">
@@ -306,6 +416,11 @@ export default function ResultsPage() {
               <Button variant={showFilters ? "primary" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
                 <Filter className="h-4 w-4" /> Filters
               </Button>
+              {results.length >= 2 && (
+                <Button variant="outline" size="sm" onClick={() => setShowCompare(true)}>
+                  <GitCompareArrows className="h-4 w-4" /> Compare Top {Math.min(3, results.length)}
+                </Button>
+              )}
               <span className="text-sm text-gray-500">{filteredResults.length} of {results.length} candidates</span>
             </div>
             <div className="flex items-center gap-2">
