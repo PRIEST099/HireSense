@@ -1,19 +1,18 @@
-import { auth } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/jobs", "/candidates"];
+export function middleware(req: NextRequest) {
+  // Check for NextAuth v5 session cookie
+  const sessionToken =
+    req.cookies.get("authjs.session-token")?.value ||
+    req.cookies.get("__Secure-authjs.session-token")?.value;
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
-
-  if (isProtected && !req.auth) {
+  if (!sessionToken) {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/dashboard/:path*", "/jobs/:path*", "/candidates/:path*"],
