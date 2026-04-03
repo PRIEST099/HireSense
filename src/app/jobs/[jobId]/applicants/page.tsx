@@ -169,14 +169,17 @@ export default function ApplicantsPage() {
             </div>
             <form onSubmit={handleResumeUrl} className="space-y-4">
               <Input
-                label="Resume URL (PDF link)"
+                label="Resume / CV URL"
                 value={resumeUrl}
                 onChange={(e) => setResumeUrl(e.target.value)}
-                placeholder="https://example.com/resume.pdf"
+                placeholder="https://drive.google.com/file/d/... or https://example.com/resume.pdf"
                 type="url"
                 required
               />
-              <p className="text-xs text-gray-400">Paste a direct link to a PDF resume. The system will fetch, parse, and extract candidate data using AI.</p>
+              <p className="text-xs text-gray-400">
+                Supports: direct PDF links, Google Drive, Dropbox, and OneDrive share links.
+                <br />For Google Drive, make sure sharing is set to &quot;Anyone with the link&quot;.
+              </p>
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setActiveTab("list")} type="button">Cancel</Button>
                 <Button type="submit" loading={urlLoading}>Import from URL</Button>

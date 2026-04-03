@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
-import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar, Pencil } from "lucide-react";
+import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar, Pencil, CheckCircle, XCircle, Clock } from "lucide-react";
 
 interface JobDetail {
   _id: string;
@@ -34,6 +34,7 @@ interface JobDetail {
   };
   candidateCount: number;
   latestSession: { status: string; completedAt: string } | null;
+  decisions: { shortlisted: number; interview: number; rejected: number; pending: number };
   createdAt: string;
 }
 
@@ -120,6 +121,53 @@ export default function JobDetailPage() {
             </div>
           </Card>
         </div>
+
+        {/* Recruiter Decisions for this job */}
+        {job.decisions && (job.decisions.shortlisted + job.decisions.interview + job.decisions.rejected + job.decisions.pending) > 0 && (
+          <Card className="mb-6">
+            <CardTitle>Candidate Decisions</CardTitle>
+            <p className="text-xs text-gray-400 mt-1 mb-4">Click a category to view those candidates</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { key: "shortlisted", label: "Shortlisted", count: job.decisions.shortlisted, icon: CheckCircle, bg: "bg-green-50 hover:bg-green-100", iconColor: "text-green-600", textColor: "text-green-700", subColor: "text-green-600", border: "border-green-200" },
+                { key: "interview", label: "Interview", count: job.decisions.interview, icon: Calendar, bg: "bg-purple-50 hover:bg-purple-100", iconColor: "text-purple-600", textColor: "text-purple-700", subColor: "text-purple-600", border: "border-purple-200" },
+                { key: "rejected", label: "Rejected", count: job.decisions.rejected, icon: XCircle, bg: "bg-red-50 hover:bg-red-100", iconColor: "text-red-500", textColor: "text-red-700", subColor: "text-red-600", border: "border-red-200" },
+                { key: "pending", label: "Pending", count: job.decisions.pending, icon: Clock, bg: "bg-gray-50 hover:bg-gray-100", iconColor: "text-gray-500", textColor: "text-gray-700", subColor: "text-gray-500", border: "border-gray-200" },
+              ].map((d) => (
+                <div
+                  key={d.key}
+                  onClick={() => d.count > 0 && router.push(`/jobs/${jobId}/results?decision=${d.key}`)}
+                  className={`flex items-center gap-3 rounded-xl p-3 border transition-all ${d.bg} ${d.border} ${d.count > 0 ? "cursor-pointer" : "opacity-60"}`}
+                >
+                  <d.icon className={`h-5 w-5 ${d.iconColor}`} />
+                  <div>
+                    <p className={`text-xl font-bold ${d.textColor}`}>{d.count}</p>
+                    <p className={`text-xs ${d.subColor}`}>{d.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Progress bar */}
+            {(() => {
+              const total = job.decisions.shortlisted + job.decisions.interview + job.decisions.rejected + job.decisions.pending;
+              const reviewed = job.decisions.shortlisted + job.decisions.interview + job.decisions.rejected;
+              if (total === 0) return null;
+              return (
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>{reviewed} of {total} reviewed</span>
+                    <span>{Math.round((reviewed / total) * 100)}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden flex">
+                    {job.decisions.shortlisted > 0 && <div className="bg-green-500 h-full" style={{ width: `${(job.decisions.shortlisted / total) * 100}%` }} />}
+                    {job.decisions.interview > 0 && <div className="bg-purple-500 h-full" style={{ width: `${(job.decisions.interview / total) * 100}%` }} />}
+                    {job.decisions.rejected > 0 && <div className="bg-red-400 h-full" style={{ width: `${(job.decisions.rejected / total) * 100}%` }} />}
+                  </div>
+                </div>
+              );
+            })()}
+          </Card>
+        )}
 
         {/* Description */}
         <Card className="mb-6">

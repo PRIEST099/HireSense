@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -75,11 +75,13 @@ interface JobData {
 
 type SortField = "rank" | "score" | "skills" | "experience";
 type FilterMatch = "all" | "strong_match" | "good_match" | "partial_match" | "weak_match";
+type FilterDecision = "all" | "shortlisted" | "interview" | "rejected" | "pending";
 
 export default function ResultsPage() {
   useSession({ required: true });
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const jobId = params.jobId as string;
 
   const [job, setJob] = useState<JobData | null>(null);
@@ -93,8 +95,15 @@ export default function ResultsPage() {
   // Filters
   const [minScore, setMinScore] = useState(0);
   const [matchFilter, setMatchFilter] = useState<FilterMatch>("all");
+  const [decisionFilter, setDecisionFilter] = useState<FilterDecision>(() => {
+    const param = searchParams.get("decision");
+    if (param && ["shortlisted", "interview", "rejected", "pending"].includes(param)) {
+      return param as FilterDecision;
+    }
+    return "all";
+  });
   const [sortBy, setSortBy] = useState<SortField>("rank");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(() => !!searchParams.get("decision"));
   const [showCompare, setShowCompare] = useState(false);
 
   const loadResults = useCallback(async () => {
@@ -159,6 +168,7 @@ export default function ResultsPage() {
   const filteredResults = useMemo(() => {
     let filtered = results.filter((r) => r.overallScore >= minScore);
     if (matchFilter !== "all") filtered = filtered.filter((r) => r.recommendation === matchFilter);
+    if (decisionFilter !== "all") filtered = filtered.filter((r) => r.recruiterDecision === decisionFilter);
 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -168,7 +178,7 @@ export default function ResultsPage() {
         default: return a.rank - b.rank;
       }
     });
-  }, [results, minScore, matchFilter, sortBy]);
+  }, [results, minScore, matchFilter, decisionFilter, sortBy]);
 
   const exportCSV = () => {
     const headers = ["Rank", "Name", "Email", "Score", "Skills Match", "Experience", "Education", "Culture Fit", "Confidence", "Recommendation", "Decision", "Strengths", "Gaps", "AI Reasoning"];
@@ -504,7 +514,31 @@ export default function ResultsPage() {
                   ))}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setMinScore(0); setMatchFilter("all"); setSortBy("rank"); }}>
+              <div>
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">Decision</label>
+                <div className="flex gap-1.5">
+                  {[
+                    { value: "all", label: "All" },
+                    { value: "shortlisted", label: "Shortlisted" },
+                    { value: "interview", label: "Interview" },
+                    { value: "rejected", label: "Rejected" },
+                    { value: "pending", label: "Pending" },
+                  ].map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => setDecisionFilter(f.value as FilterDecision)}
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                        decisionFilter === f.value
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setMinScore(0); setMatchFilter("all"); setDecisionFilter("all"); setSortBy("rank"); }}>
                 Reset
               </Button>
             </div>
@@ -527,7 +561,7 @@ export default function ResultsPage() {
               icon={Filter}
               title="No candidates match your filters"
               description={`${results.length} candidates were screened, but none match the current filter settings. Try adjusting the minimum score or match type.`}
-              action={{ label: "Reset Filters", onClick: () => { setMinScore(0); setMatchFilter("all"); setSortBy("rank"); } }}
+              action={{ label: "Reset Filters", onClick: () => { setMinScore(0); setMatchFilter("all"); setDecisionFilter("all"); setSortBy("rank"); } }}
             />
           </Card>
         ) : filteredResults.length > 0 && (

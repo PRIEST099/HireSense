@@ -24,10 +24,23 @@ export async function GET(
     const job = await Job.findOne({ _id: jobId, userId }).lean();
     if (!job) return NextResponse.json({ success: false, error: "Job not found" }, { status: 404 });
 
-    const candidateCount = await Candidate.countDocuments({ jobId });
-    const latestSession = await ScreeningSession.findOne({ jobId }).sort({ createdAt: -1 }).lean();
+    const [candidateCount, latestSession, decisionCounts] = await Promise.all([
+      Candidate.countDocuments({ jobId }),
+      ScreeningSession.findOne({ jobId }).sort({ createdAt: -1 }).lean(),
+      ScreeningResult.aggregate([
+        { $match: { jobId: job._id } },
+        { $group: { _id: "$recruiterDecision", count: { $sum: 1 } } },
+      ]),
+    ]);
 
-    return NextResponse.json({ success: true, data: { ...job, candidateCount, latestSession } });
+    const decisions = { shortlisted: 0, interview: 0, rejected: 0, pending: 0 };
+    for (const d of decisionCounts) {
+      if (d._id in decisions) {
+        decisions[d._id as keyof typeof decisions] = d.count;
+      }
+    }
+
+    return NextResponse.json({ success: true, data: { ...job, candidateCount, latestSession, decisions } });
   } catch (error) {
     console.error("Fetch job error:", error);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });

@@ -1,14 +1,16 @@
+import { extractText } from "unpdf";
 import { generateJSON } from "@/lib/ai/provider";
 import { buildResumeParsingPrompt } from "@/lib/ai/prompts";
 import { candidateProfileSchema } from "@/lib/validators/schemas";
 import { withRetry } from "@/lib/utils/rate-limiter";
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdf = require("pdf-parse");
-  const data = await pdf(buffer);
-  // Preserve newlines for resume structure, collapse only runs of spaces/tabs
-  return data.text.replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  const { text } = await extractText(new Uint8Array(buffer));
+
+  // text is an array of page strings — join them
+  const rawText = Array.isArray(text) ? text.join("\n\n") : String(text);
+
+  return rawText.replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 export async function parseResumeWithAI(

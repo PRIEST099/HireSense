@@ -30,43 +30,74 @@ export async function POST(
 
     const formData = await req.formData();
 
-    // Handle resume URL
+    // Handle resume URL (supports direct PDF links + Google Drive, Dropbox, OneDrive)
     const resumeUrl = formData.get("resumeUrl") as string | null;
     if (resumeUrl) {
-      // Fix #1: SSRF protection
       const urlCheck = validateResumeUrl(resumeUrl);
       if (!urlCheck.valid) {
         return NextResponse.json({ success: false, error: urlCheck.error }, { status: 400 });
       }
 
+      const fetchUrl = urlCheck.resolvedUrl || resumeUrl;
       const jobContext = `${job.title} at ${job.company}. Required skills: ${job.requirements.skills.join(", ")}.`;
+
       try {
-        const response = await fetch(resumeUrl, { signal: AbortSignal.timeout(15000) });
-        if (!response.ok) throw new Error(`Failed to fetch URL: ${response.status}`);
-        const contentType = response.headers.get("content-type") || "";
-        if (!contentType.includes("pdf") && !resumeUrl.toLowerCase().endsWith(".pdf")) {
-          return NextResponse.json({ success: false, error: "URL must point to a PDF file" }, { status: 400 });
+        console.log(`[Upload] Fetching resume from: ${fetchUrl} (original: ${resumeUrl})`);
+        // Follow redirects (cloud storage often redirects to CDN)
+        const response = await fetch(fetchUrl, {
+          signal: AbortSignal.timeout(20000),
+          redirect: "follow",
+          headers: { "User-Agent": "HireSense-AI/1.0" },
+        });
+        if (!response.ok) {
+          return NextResponse.json({ success: false, error: `Could not download file (HTTP ${response.status}). Make sure the link is publicly accessible.` }, { status: 400 });
         }
+
         const buffer = Buffer.from(await response.arrayBuffer());
         if (buffer.length > MAX_FILE_SIZE) {
-          return NextResponse.json({ success: false, error: "Resume PDF exceeds 5MB limit" }, { status: 400 });
+          return NextResponse.json({ success: false, error: "File exceeds 5MB limit" }, { status: 400 });
         }
+        if (buffer.length < 100) {
+          return NextResponse.json({ success: false, error: "Downloaded file is too small — it may be an error page. Check the sharing settings." }, { status: 400 });
+        }
+
+        // Check PDF magic bytes (%PDF)
+        const header = buffer.subarray(0, 5).toString("ascii");
+        if (!header.startsWith("%PDF")) {
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("html")) {
+            return NextResponse.json({ success: false, error: "The URL returned an HTML page, not a PDF. If using Google Drive, make sure the file sharing is set to 'Anyone with the link'." }, { status: 400 });
+          }
+          return NextResponse.json({ success: false, error: "The downloaded file is not a valid PDF. Please check the URL." }, { status: 400 });
+        }
+
         const rawText = await extractTextFromPDF(buffer);
+        if (rawText.length < 30) {
+          return NextResponse.json({ success: false, error: "Could not extract text from this PDF. It may be a scanned image or corrupted file." }, { status: 400 });
+        }
+
         try {
           const { profile } = await parseResumeWithAI(rawText, jobContext);
           await Candidate.create({ jobId, source: "resume", profile, rawResumeText: rawText, resumeFileUrl: resumeUrl, profileParsedByAI: true });
         } catch {
-          const name = resumeUrl.split("/").pop()?.replace(".pdf", "") || "Unknown";
+          // AI parsing failed — store with raw text for manual review
           await Candidate.create({
             jobId, source: "resume",
-            profile: { name, email: "", phone: "", location: "", linkedIn: "", portfolio: "", summary: rawText.slice(0, 500), skills: [], experience: [], education: [], certifications: [], languages: [], totalYearsExperience: 0 },
+            profile: { name: "Imported from URL", email: "", phone: "", location: "", linkedIn: "", portfolio: "", summary: rawText.slice(0, 500), skills: [], experience: [], education: [], certifications: [], languages: [], totalYearsExperience: 0 },
             rawResumeText: rawText, resumeFileUrl: resumeUrl, profileParsedByAI: false,
           });
         }
         return NextResponse.json({ success: true, data: { candidatesCreated: 1, errors: [], warnings: [] } });
       } catch (err) {
-        console.error("Resume URL processing error:", err);
-        return NextResponse.json({ success: false, error: "Failed to process the resume URL. Please check it points to a valid, accessible PDF." }, { status: 400 });
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error("Resume URL processing error:", errMsg, err);
+        if (errMsg.includes("timeout") || errMsg.includes("abort")) {
+          return NextResponse.json({ success: false, error: "Download timed out. The file may be too large or the server is slow. Try a direct PDF link instead." }, { status: 400 });
+        }
+        if (errMsg.includes("fetch") || errMsg.includes("network") || errMsg.includes("ENOTFOUND")) {
+          return NextResponse.json({ success: false, error: "Could not reach the URL. Check your internet connection and that the link is correct." }, { status: 400 });
+        }
+        return NextResponse.json({ success: false, error: `Failed to process: ${errMsg.slice(0, 150)}` }, { status: 400 });
       }
     }
 
