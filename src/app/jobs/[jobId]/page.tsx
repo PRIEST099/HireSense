@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
-import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar, Pencil, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Users, Brain, FileText, ArrowRight, MapPin, Building, Calendar, Pencil, CheckCircle, XCircle, Clock, Trash2 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 
 interface JobDetail {
   _id: string;
@@ -42,9 +44,12 @@ export default function JobDetailPage() {
   useSession({ required: true });
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const jobId = params.jobId as string;
 
@@ -64,12 +69,15 @@ export default function JobDetailPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <Button variant="outline" size="sm" onClick={() => router.push(`/jobs/${jobId}/edit`)} className="mb-3">
-              <Pencil className="h-4 w-4" /> Edit Job
-            </Button>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
               <StatusBadge status={job.status} />
+              <Button variant="outline" size="sm" onClick={() => router.push(`/jobs/${jobId}/edit`)}>
+                <Pencil className="h-4 w-4" /> Edit
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1"><Building className="h-4 w-4" /> {job.company}</span>
@@ -220,6 +228,31 @@ export default function JobDetailPage() {
           </div>
         </Card>
       </div>
+
+      {/* Delete Job Modal */}
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Job">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete <strong>{job.title}</strong>? This will permanently remove the job, all candidates, and all screening results. This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+          <Button variant="danger" size="sm" loading={deleting} onClick={async () => {
+            setDeleting(true);
+            const res = await fetch(`/api/jobs/${jobId}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+              toast("Job deleted");
+              router.push("/jobs");
+            } else {
+              toast(data.error || "Failed to delete job", "error");
+              setDeleting(false);
+              setShowDeleteModal(false);
+            }
+          }}>
+            Delete Job
+          </Button>
+        </div>
+      </Modal>
     </AppLayout>
   );
 }

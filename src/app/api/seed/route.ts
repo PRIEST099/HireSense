@@ -66,10 +66,61 @@ export async function POST() {
     });
 
     for (const c of DEMO_CANDIDATES) {
+      // Split name into firstName/lastName
+      const nameParts = c.name.split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      // Normalize to official schema format
+      const profile = {
+        ...c,
+        firstName,
+        lastName,
+        headline: c.experience?.[0] ? `${c.experience[0].title} at ${c.experience[0].company}` : "",
+        bio: c.summary,
+        phone: "",
+        linkedIn: "",
+        portfolio: "",
+        // Normalize languages from string[] to object[]
+        languages: (c.languages || []).map((l: string | { name: string; proficiency: string }) =>
+          typeof l === "string" ? { name: l, proficiency: "fluent" } : l
+        ),
+        // Normalize certifications from string[] to object[]
+        certifications: (c.certifications || []).map((cert: string | { name: string; issuer: string; issueDate: string }) =>
+          typeof cert === "string" ? { name: cert, issuer: "", issueDate: "" } : cert
+        ),
+        // Normalize experience: add role alias, technologies, isCurrent
+        experience: (c.experience || []).map((exp) => ({
+          company: exp.company,
+          role: exp.title,
+          title: exp.title,
+          startDate: exp.startDate,
+          endDate: exp.endDate || "",
+          description: exp.description,
+          technologies: [] as string[],
+          isCurrent: !exp.endDate,
+          achievements: exp.achievements || [],
+        })),
+        // Normalize education: add fieldOfStudy, startYear, endYear
+        education: (c.education || []).map((edu) => ({
+          institution: edu.institution,
+          degree: edu.degree,
+          fieldOfStudy: edu.field || "",
+          field: edu.field || "",
+          startYear: 0,
+          endYear: edu.graduationYear || 0,
+          graduationYear: edu.graduationYear || 0,
+        })),
+        // New official fields
+        projects: [],
+        availability: { status: "available", type: "full-time", startDate: "" },
+        socialLinks: { linkedin: "", github: "", portfolio: "" },
+      };
+
       await Candidate.create({
         jobId: job._id,
         source: "platform",
-        profile: { ...c, phone: "", linkedIn: "", portfolio: "" },
+        profile,
         profileParsedByAI: false,
       });
     }

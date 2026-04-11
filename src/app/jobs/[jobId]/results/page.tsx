@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ProgressBar, ScoreBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import { ScoreDistributionChart } from "@/components/screening/ScoreDistributionChart";
 import {
@@ -82,6 +83,7 @@ export default function ResultsPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const jobId = params.jobId as string;
 
   const [job, setJob] = useState<JobData | null>(null);
@@ -145,6 +147,9 @@ export default function ResultsPage() {
     if (data.success) {
       setSession(data.data);
       setResults([]);
+      toast("AI Screening started", "info");
+    } else {
+      toast(data.error || "Failed to start screening", "error");
     }
     setTriggerLoading(false);
   };
@@ -161,6 +166,8 @@ export default function ResultsPage() {
       setResults((prev) =>
         prev.map((r) => r.candidateId === candidateId ? { ...r, recruiterDecision: decision } : r)
       );
+      const label = decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
+      toast(`Candidate ${label}`);
     }
     setDecisionLoading(null);
   };
@@ -240,14 +247,13 @@ export default function ResultsPage() {
                     <Download className="h-4 w-4" /> Export
                   </Button>
                 )}
-                <Button
+                <button
                   onClick={triggerScreening}
-                  loading={triggerLoading || !!isScreening}
-                  disabled={!!isScreening}
-                  className="bg-white text-blue-700 hover:bg-blue-50"
+                  disabled={triggerLoading || !!isScreening}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg font-semibold px-5 py-2.5 text-sm bg-white text-blue-700 hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-50"
                 >
                   <Play className="h-4 w-4" /> {isScreening ? "Screening..." : "Run AI Screening"}
-                </Button>
+                </button>
               </div>
             </div>
           </div>

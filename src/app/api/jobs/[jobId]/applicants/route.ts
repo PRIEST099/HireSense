@@ -62,8 +62,8 @@ export async function POST(
     const job = await Job.findOne({ _id: jobId, userId }).select("_id").lean();
     if (!job) return NextResponse.json({ success: false, error: "Job not found" }, { status: 404 });
 
-    const results = [];
-    const errors = [];
+    const results: unknown[] = [];
+    const errors: string[] = [];
 
     for (let i = 0; i < profiles.length; i++) {
       const parsed = candidateProfileSchema.safeParse(profiles[i]);
@@ -81,10 +81,21 @@ export async function POST(
         }
       }
 
+      // Normalize union types for Mongoose compatibility
+      const profileData = {
+        ...parsed.data,
+        languages: (parsed.data.languages || []).map((l) =>
+          typeof l === "string" ? { name: l, proficiency: "fluent" } : l
+        ),
+        certifications: (parsed.data.certifications || []).map((c) =>
+          typeof c === "string" ? { name: c, issuer: "", issueDate: "" } : c
+        ),
+      };
+
       const candidate = await Candidate.create({
         jobId,
         source: "platform",
-        profile: parsed.data,
+        profile: profileData,
         profileParsedByAI: false,
       });
       results.push(candidate);

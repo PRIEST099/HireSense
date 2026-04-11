@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ui/Toast";
 import { useAppDispatch } from "@/store/hooks";
 import { createJob } from "@/store/slices/jobsSlice";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -22,6 +23,7 @@ export default function NewJobPage() {
   useSession({ required: true });
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -89,6 +91,7 @@ export default function NewJobPage() {
           },
         })
       ).unwrap();
+      toast("Job created successfully");
       router.push("/jobs");
     } catch (err) {
       setError((err as Error).message || "Failed to create job");

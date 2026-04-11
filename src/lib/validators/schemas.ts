@@ -56,51 +56,93 @@ export const jobSchema = z.object({
   ),
 });
 
+// Official Umurava Talent Profile Schema + backward compat
 export const candidateProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email().optional().default(""),
-  phone: z.string().optional().default(""),
+  // 3.1 Basic Info
+  firstName: z.string().optional().default(""),
+  lastName: z.string().optional().default(""),
+  name: z.string().optional().default(""), // backward compat
+  email: z.string().optional().default(""),
+  headline: z.string().optional().default(""),
+  bio: z.string().optional().default(""),
   location: z.string().optional().default(""),
-  linkedIn: z.string().optional().default(""),
-  portfolio: z.string().optional().default(""),
-  summary: z.string().optional().default(""),
-  skills: z
-    .array(
-      z.object({
-        name: z.string(),
-        level: z.enum(["beginner", "intermediate", "advanced", "expert"]).default("intermediate"),
-        yearsOfExperience: z.number().optional().default(0),
-      })
-    )
-    .optional()
-    .default([]),
-  experience: z
-    .array(
-      z.object({
-        title: z.string(),
-        company: z.string(),
-        startDate: z.string(),
-        endDate: z.string().optional().default(""),
-        description: z.string().optional().default(""),
-        achievements: z.array(z.string()).optional().default([]),
-      })
-    )
-    .optional()
-    .default([]),
-  education: z
-    .array(
-      z.object({
-        degree: z.string(),
-        institution: z.string(),
-        field: z.string().optional().default(""),
-        graduationYear: z.number().optional().default(0),
-      })
-    )
-    .optional()
-    .default([]),
-  certifications: z.array(z.string()).optional().default([]),
-  languages: z.array(z.string()).optional().default([]),
+  phone: z.string().optional().default(""),
+  summary: z.string().optional().default(""), // backward compat alias for bio
+
+  // 3.2 Skills & Languages
+  skills: z.array(z.object({
+    name: z.string(),
+    level: z.enum(["beginner", "intermediate", "advanced", "expert"]).default("intermediate"),
+    yearsOfExperience: z.number().optional().default(0),
+  })).optional().default([]),
+  languages: z.array(
+    z.union([
+      z.object({ name: z.string(), proficiency: z.enum(["basic", "conversational", "fluent", "native"]).default("fluent") }),
+      z.string(), // backward compat: accept flat strings
+    ])
+  ).optional().default([]),
+
+  // 3.3 Experience
+  experience: z.array(z.object({
+    company: z.string(),
+    role: z.string().optional().default(""),
+    title: z.string().optional().default(""), // backward compat
+    startDate: z.string(),
+    endDate: z.string().optional().default(""),
+    description: z.string().optional().default(""),
+    technologies: z.array(z.string()).optional().default([]),
+    isCurrent: z.boolean().optional().default(false),
+    achievements: z.array(z.string()).optional().default([]),
+  })).optional().default([]),
+
+  // 3.4 Education
+  education: z.array(z.object({
+    institution: z.string(),
+    degree: z.string(),
+    fieldOfStudy: z.string().optional().default(""),
+    field: z.string().optional().default(""), // backward compat
+    startYear: z.number().optional().default(0),
+    endYear: z.number().optional().default(0),
+    graduationYear: z.number().optional().default(0), // backward compat
+  })).optional().default([]),
+
+  // 3.5 Certifications
+  certifications: z.array(
+    z.union([
+      z.object({ name: z.string(), issuer: z.string().optional().default(""), issueDate: z.string().optional().default("") }),
+      z.string(), // backward compat: accept flat strings
+    ])
+  ).optional().default([]),
+
+  // 3.6 Projects
+  projects: z.array(z.object({
+    name: z.string(),
+    description: z.string().optional().default(""),
+    technologies: z.array(z.string()).optional().default([]),
+    role: z.string().optional().default(""),
+    link: z.string().optional().default(""),
+    startDate: z.string().optional().default(""),
+    endDate: z.string().optional().default(""),
+  })).optional().default([]),
+
+  // 3.7 Availability
+  availability: z.object({
+    status: z.enum(["available", "open_to_opportunities", "not_available"]).default("available"),
+    type: z.enum(["full-time", "part-time", "contract"]).default("full-time"),
+    startDate: z.string().optional().default(""),
+  }).optional().default({ status: "available", type: "full-time", startDate: "" }),
+
+  // 3.8 Social Links
+  socialLinks: z.object({
+    linkedin: z.string().optional().default(""),
+    github: z.string().optional().default(""),
+    portfolio: z.string().optional().default(""),
+  }).optional().default({ linkedin: "", github: "", portfolio: "" }),
+
+  // Extensions
   totalYearsExperience: z.number().optional().default(0),
+  linkedIn: z.string().optional().default(""), // backward compat
+  portfolio: z.string().optional().default(""), // backward compat
 });
 
 export const aiScoringResponseSchema = z.object({
@@ -111,8 +153,8 @@ export const aiScoringResponseSchema = z.object({
     educationMatch: z.number().min(0).max(100),
     cultureFitMatch: z.number().min(0).max(100),
   }),
-  strengths: z.array(z.string()).min(1).max(5),
-  gaps: z.array(z.string()).max(5),
+  strengths: z.array(z.string()).min(1).max(3),
+  gaps: z.array(z.string()).max(3),
   recommendation: z.enum(["strong_match", "good_match", "partial_match", "weak_match"]),
   reasoning: z.string().min(10),
   confidenceScore: z.number().min(0).max(100),

@@ -11,6 +11,7 @@ import { ScoreBar } from "@/components/ui/ProgressBar";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ArrowLeft, Mail, Phone, MapPin, Globe, Link as LinkIcon, Award, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
 import { SkillRadarChart } from "@/components/screening/SkillRadarChart";
 import type { Candidate } from "@/types/candidate";
@@ -20,6 +21,7 @@ export default function CandidateDetailPage() {
   useSession({ required: true });
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const candidateId = params.candidateId as string;
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
@@ -53,6 +55,8 @@ export default function CandidateDetailPage() {
     const data = await res.json();
     if (data.success && result) {
       setResult({ ...result, recruiterDecision: decision as ScreeningResult["recruiterDecision"] });
+      const label = decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
+      toast(`Candidate ${label}`);
     }
     setDecisionLoading(false);
   };
@@ -73,10 +77,11 @@ export default function CandidateDetailPage() {
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl">
-              {p.name.charAt(0).toUpperCase()}
+              {(p.firstName || p.name || "?").charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{p.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : p.name}</h1>
+              {p.headline && <p className="text-sm text-gray-500 mt-0.5">{p.headline}</p>}
               <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
                 {p.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {p.email}</span>}
                 {p.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {p.phone}</span>}
@@ -188,10 +193,10 @@ export default function CandidateDetailPage() {
 
           {/* Profile details */}
           <div className="space-y-6">
-            {p.summary && (
+            {(p.bio || p.summary) && (
               <Card>
                 <CardTitle>Summary</CardTitle>
-                <p className="text-sm text-gray-600 mt-2">{p.summary}</p>
+                <p className="text-sm text-gray-600 mt-2">{p.bio || p.summary}</p>
               </Card>
             )}
 
@@ -212,7 +217,7 @@ export default function CandidateDetailPage() {
               <div className="mt-2 space-y-4">
                 {p.experience.map((exp, i) => (
                   <div key={i} className="border-l-2 border-blue-200 pl-4">
-                    <p className="font-medium text-gray-900 text-sm">{exp.title}</p>
+                    <p className="font-medium text-gray-900 text-sm">{exp.role || exp.title}</p>
                     <p className="text-xs text-gray-500">{exp.company} &middot; {exp.startDate} - {exp.endDate || "Present"}</p>
                     {exp.description && <p className="text-xs text-gray-600 mt-1">{exp.description}</p>}
                   </div>

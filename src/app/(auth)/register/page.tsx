@@ -32,15 +32,17 @@ export default function RegisterPage() {
       }
 
       // Auto-login after registration
-      try {
-        await signIn("credentials", {
-          email: form.email,
-          password: form.password,
-          callbackUrl: "/dashboard",
-        });
-      } catch {
-        setError("Account created. Please sign in manually.");
-        setLoading(false);
+      const loginResult = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (loginResult?.error) {
+        // Account created but auto-login failed — redirect to login
+        window.location.href = "/login";
+      } else {
+        window.location.href = "/dashboard";
       }
     } catch {
       setError("Something went wrong");

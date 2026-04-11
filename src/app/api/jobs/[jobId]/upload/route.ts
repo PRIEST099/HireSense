@@ -12,6 +12,17 @@ import { validateResumeUrl } from "@/lib/utils/url-validator";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES = 10;
 
+function emptyProfile(name: string, summary: string = "") {
+  return {
+    firstName: "", lastName: "", name, email: "", phone: "", headline: "", bio: summary, summary,
+    location: "", linkedIn: "", portfolio: "",
+    skills: [], experience: [], education: [], certifications: [], languages: [],
+    projects: [], availability: { status: "available", type: "full-time", startDate: "" },
+    socialLinks: { linkedin: "", github: "", portfolio: "" },
+    totalYearsExperience: 0,
+  };
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ jobId: string }> }
@@ -83,7 +94,7 @@ export async function POST(
           // AI parsing failed — store with raw text for manual review
           await Candidate.create({
             jobId, source: "resume",
-            profile: { name: "Imported from URL", email: "", phone: "", location: "", linkedIn: "", portfolio: "", summary: rawText.slice(0, 500), skills: [], experience: [], education: [], certifications: [], languages: [], totalYearsExperience: 0 },
+            profile: emptyProfile("Imported from URL", rawText.slice(0, 500)),
             rawResumeText: rawText, resumeFileUrl: resumeUrl, profileParsedByAI: false,
           });
         }
@@ -166,7 +177,7 @@ export async function POST(
             await Candidate.create({
               jobId,
               source: "resume",
-              profile: { name: file.name.replace(".pdf", ""), email: "", phone: "", location: "", linkedIn: "", portfolio: "", summary: "", skills: [], experience: [], education: [], certifications: [], languages: [], totalYearsExperience: 0 },
+              profile: emptyProfile(file.name.replace(".pdf", "")),
               rawResumeText: rawText,
               profileParsedByAI: false,
             });
@@ -183,7 +194,7 @@ export async function POST(
             await Candidate.create({
               jobId,
               source: "resume",
-              profile: { name: file.name.replace(".pdf", ""), email: "", phone: "", location: "", linkedIn: "", portfolio: "", summary: rawText.slice(0, 500), skills: [], experience: [], education: [], certifications: [], languages: [], totalYearsExperience: 0 },
+              profile: emptyProfile(file.name.replace(".pdf", ""), rawText.slice(0, 500)),
               rawResumeText: rawText,
               profileParsedByAI: false,
             });

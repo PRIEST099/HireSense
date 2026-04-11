@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ensureAdminAccount } from "./seed-admin";
 
 // Defer the check to runtime (dbConnect call) so build doesn't crash
 const MONGODB_URI = process.env.MONGODB_URI || "";
@@ -35,6 +36,10 @@ async function dbConnect(): Promise<typeof mongoose> {
   }
 
   cached.conn = await cached.promise;
+
+  // Ensure admin account exists on first connection
+  await ensureAdminAccount().catch(() => {}); // Silent fail — non-critical
+
   return cached.conn;
 }
 

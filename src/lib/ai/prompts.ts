@@ -1,7 +1,7 @@
-export const PROMPT_VERSION = "1.0.0";
+export const PROMPT_VERSION = "2.0.0";
 
 export function buildResumeParsingPrompt(rawText: string, jobContext: string): string {
-  return `You are an expert resume parser. Extract structured information from the resume text below.
+  return `You are an expert resume parser. Extract structured information following the Umurava Talent Profile Schema.
 
 JOB CONTEXT (use this to understand which skills and experiences are most relevant):
 ${jobContext}
@@ -9,28 +9,38 @@ ${jobContext}
 RESUME TEXT:
 ${rawText}
 
-Extract the following information as JSON. If any field is not found, use empty string or empty array as appropriate. Do NOT guess or fabricate information — only extract what is explicitly stated.
+Extract the following JSON. If any field is not found, use empty string, empty array, or defaults as shown. Do NOT guess or fabricate information — only extract what is explicitly stated.
 
 {
-  "name": "string",
+  "firstName": "string",
+  "lastName": "string",
+  "name": "string - full name as backup",
   "email": "string",
   "phone": "string",
-  "location": "string",
-  "linkedIn": "string",
-  "portfolio": "string",
-  "summary": "string - brief professional summary",
+  "headline": "string - short professional title, e.g. 'Backend Engineer - Node.js & AI Systems'",
+  "bio": "string - professional summary/bio",
+  "location": "string - City, Country",
   "skills": [{"name": "string", "level": "beginner|intermediate|advanced|expert", "yearsOfExperience": 0}],
-  "experience": [{"title": "string", "company": "string", "startDate": "string", "endDate": "string", "description": "string", "achievements": ["string"]}],
-  "education": [{"degree": "string", "institution": "string", "field": "string", "graduationYear": 0}],
-  "certifications": ["string"],
-  "languages": ["string"],
+  "languages": [{"name": "string", "proficiency": "basic|conversational|fluent|native"}],
+  "experience": [{"company": "string", "role": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM or empty if current", "description": "string", "technologies": ["string"], "isCurrent": false, "achievements": ["string"]}],
+  "education": [{"institution": "string", "degree": "string", "fieldOfStudy": "string", "startYear": 0, "endYear": 0}],
+  "certifications": [{"name": "string", "issuer": "string", "issueDate": "YYYY-MM"}],
+  "projects": [{"name": "string", "description": "string", "technologies": ["string"], "role": "string", "link": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM"}],
+  "availability": {"status": "available|open_to_opportunities|not_available", "type": "full-time|part-time|contract", "startDate": ""},
+  "socialLinks": {"linkedin": "string", "github": "string", "portfolio": "string"},
   "totalYearsExperience": 0
 }
 
 Rules:
-- For skill levels, infer from context: if someone is senior or has 5+ years in a skill, mark as "advanced" or "expert"
-- Calculate totalYearsExperience from the experience entries
-- Keep descriptions concise
+- Split the full name into firstName and lastName. Also keep the full name in the "name" field.
+- For headline, create a concise professional title if not explicitly stated (e.g. "Senior Software Engineer" from their most recent role)
+- For skill levels, infer from context: senior + 5yr = advanced/expert
+- For experience, extract technologies used per role from the description
+- Set isCurrent: true if the role has no end date or says "Present"
+- For languages, infer proficiency: if the resume is written in English, assume fluent
+- For certifications, separate the cert name from the issuer (e.g. "AWS Certified Developer" → name: "Certified Developer", issuer: "AWS")
+- For projects, extract from portfolio/projects sections if present
+- Calculate totalYearsExperience from experience entries
 - Return ONLY the JSON object, no other text`;
 }
 

@@ -64,8 +64,9 @@ export async function PATCH(
     const candidate = await verifyCandidateOwnership(candidateId, userId);
     if (!candidate) return NextResponse.json({ success: false, error: "Candidate not found" }, { status: 404 });
 
+    // Scope by jobId to prevent cross-job decision updates
     const result = await ScreeningResult.findOneAndUpdate(
-      { candidateId },
+      { candidateId, jobId: candidate.jobId },
       { recruiterDecision: parsed.data.decision },
       { new: true, sort: { createdAt: -1 } }
     ).lean();
@@ -75,6 +76,32 @@ export async function PATCH(
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("Update decision error:", error);
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ candidateId: string }> }
+) {
+  try {
+    const userId = await getAuthUserId();
+    if (!userId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const { candidateId } = await params;
+    if (!isValidObjectId(candidateId)) return NextResponse.json({ success: false, error: "Invalid candidate ID" }, { status: 400 });
+
+    await dbConnect();
+
+    const candidate = await verifyCandidateOwnership(candidateId, userId);
+    if (!candidate) return NextResponse.json({ success: false, error: "Candidate not found" }, { status: 404 });
+
+    await ScreeningResult.deleteMany({ candidateId });
+    await Candidate.findByIdAndDelete(candidateId);
+
+    return NextResponse.json({ success: true, message: "Candidate deleted" });
+  } catch (error) {
+    console.error("Delete candidate error:", error);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

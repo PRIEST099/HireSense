@@ -27,18 +27,25 @@ function matchColumn(header: string): string | null {
 
 export interface ParsedCandidate {
   profile: {
+    firstName: string;
+    lastName: string;
     name: string;
     email: string;
     phone: string;
+    headline: string;
+    bio: string;
     location: string;
+    summary: string;
     linkedIn: string;
     portfolio: string;
-    summary: string;
     skills: { name: string; level: "intermediate"; yearsOfExperience: number }[];
     experience: never[];
-    education: { degree: string; institution: string; field: string; graduationYear: number }[];
-    certifications: string[];
-    languages: string[];
+    education: { institution: string; degree: string; fieldOfStudy: string; startYear: number; endYear: number }[];
+    certifications: { name: string; issuer: string; issueDate: string }[];
+    languages: { name: string; proficiency: string }[];
+    projects: never[];
+    availability: { status: string; type: string; startDate: string };
+    socialLinks: { linkedin: string; github: string; portfolio: string };
     totalYearsExperience: number;
   };
   rawCsvRow: Record<string, string>;
@@ -102,34 +109,46 @@ export function parseCSV(csvText: string): { candidates: ParsedCandidate[]; erro
           const institution = parts[1] || "";
           const yearMatch = mapped.education.match(/\b(19|20)\d{2}\b/);
           const graduationYear = yearMatch ? parseInt(yearMatch[0], 10) : 0;
-          return [{ degree, institution, field: "", graduationYear }];
+          return [{ institution, degree, fieldOfStudy: "", startYear: 0, endYear: graduationYear }];
         })()
       : [];
 
     const certifications = mapped.certifications
-      ? mapped.certifications.split(/[,;|]/).map((c) => c.trim()).filter(Boolean)
+      ? mapped.certifications.split(/[,;|]/).map((c) => c.trim()).filter(Boolean).map((name) => ({ name, issuer: "", issueDate: "" }))
       : [];
 
     const languages = mapped.languages
-      ? mapped.languages.split(/[,;|]/).map((l) => l.trim()).filter(Boolean)
+      ? mapped.languages.split(/[,;|]/).map((l) => l.trim()).filter(Boolean).map((name) => ({ name, proficiency: "fluent" }))
       : [];
 
     const totalYears = mapped.experience ? parseInt(mapped.experience, 10) || 0 : 0;
 
+    // Split name into firstName/lastName
+    const nameParts = mapped.name.trim().split(/\s+/);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
     candidates.push({
       profile: {
+        firstName,
+        lastName,
         name: mapped.name.trim(),
         email: mapped.email || "",
         phone: mapped.phone || "",
+        headline: "",
+        bio: mapped.summary || "",
         location: mapped.location || "",
+        summary: mapped.summary || "",
         linkedIn: mapped.linkedIn || "",
         portfolio: mapped.portfolio || "",
-        summary: mapped.summary || "",
         skills,
         experience: [],
         education,
         certifications,
         languages,
+        projects: [],
+        availability: { status: "available", type: "full-time", startDate: "" },
+        socialLinks: { linkedin: mapped.linkedIn || "", github: "", portfolio: mapped.portfolio || "" },
         totalYearsExperience: totalYears,
       },
       rawCsvRow: row,

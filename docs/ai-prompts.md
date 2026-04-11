@@ -79,7 +79,7 @@ Rules:
 
 - **Confidence score** (0-100) makes the AI self-assess how certain it is about the evaluation. Low confidence flags candidates who need human review.
 
-- **Capped strengths/gaps** (max 3 each) keeps output concise and recruiter-friendly
+- **Capped strengths/gaps** (max 3 each in prompt, enforced by Zod schema) keeps output concise and recruiter-friendly
 
 - **Parallel processing** with `Promise.allSettled()` at concurrency of 3 -- one candidate failure doesn't block others
 

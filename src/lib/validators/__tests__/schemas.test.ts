@@ -98,22 +98,48 @@ describe("jobSchema", () => {
 });
 
 describe("candidateProfileSchema", () => {
-  it("accepts minimal profile", () => {
+  it("accepts minimal profile with firstName/lastName", () => {
+    const result = candidateProfileSchema.safeParse({ firstName: "Jane", lastName: "Doe" });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts minimal profile with backward-compat name field", () => {
     const result = candidateProfileSchema.safeParse({ name: "Jane Doe" });
     expect(result.success).toBe(true);
   });
 
-  it("rejects empty name", () => {
-    const result = candidateProfileSchema.safeParse({ name: "" });
-    expect(result.success).toBe(false);
+  it("accepts empty profile (all fields optional with defaults)", () => {
+    const result = candidateProfileSchema.safeParse({});
+    expect(result.success).toBe(true);
   });
 
-  it("accepts full profile", () => {
+  it("accepts full official schema profile", () => {
+    const result = candidateProfileSchema.safeParse({
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@test.com",
+      headline: "Senior Engineer",
+      bio: "Full-stack developer",
+      location: "Kigali, Rwanda",
+      skills: [{ name: "React", level: "advanced", yearsOfExperience: 3 }],
+      languages: [{ name: "English", proficiency: "fluent" }],
+      experience: [{ company: "Corp", role: "Engineer", startDate: "2020-01", technologies: ["React"], isCurrent: true }],
+      education: [{ institution: "MIT", degree: "BSc CS", fieldOfStudy: "CS", startYear: 2016, endYear: 2020 }],
+      certifications: [{ name: "AWS", issuer: "Amazon", issueDate: "2023-01" }],
+      projects: [{ name: "App", description: "A cool app", technologies: ["React"], role: "Lead", link: "https://app.com", startDate: "2023-01", endDate: "2023-06" }],
+      availability: { status: "available", type: "full-time" },
+      socialLinks: { linkedin: "https://linkedin.com/in/jane", github: "https://github.com/jane", portfolio: "" },
+      totalYearsExperience: 5,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts backward-compat profile with flat strings", () => {
     const result = candidateProfileSchema.safeParse({
       name: "Jane Doe",
       email: "jane@test.com",
       skills: [{ name: "React", level: "advanced", yearsOfExperience: 3 }],
-      experience: [{ title: "Engineer", company: "Corp", startDate: "2020-01" }],
+      experience: [{ company: "Corp", role: "Engineer", startDate: "2020-01" }],
       education: [{ degree: "BSc CS", institution: "MIT" }],
       totalYearsExperience: 5,
     });

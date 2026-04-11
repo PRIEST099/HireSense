@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useToast } from "@/components/ui/Toast";
 import { useDropzone } from "react-dropzone";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -11,12 +12,13 @@ import { Input, TextArea } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Users, Upload, UserPlus, FileSpreadsheet, FileText, CheckCircle, AlertCircle, X, Link as LinkIcon } from "lucide-react";
+import { Users, Upload, UserPlus, FileSpreadsheet, FileText, CheckCircle, AlertCircle, X, Link as LinkIcon, Trash2 } from "lucide-react";
 import type { Candidate } from "@/types/candidate";
 
 export default function ApplicantsPage() {
   useSession({ required: true });
   const params = useParams();
+  const { toast } = useToast();
   const jobId = params.jobId as string;
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -59,6 +61,9 @@ export default function ApplicantsPage() {
       setFormData({ name: "", email: "", phone: "", location: "", summary: "", skills: "" });
       setActiveTab("list");
       loadCandidates();
+      toast("Candidate added successfully");
+    } else {
+      toast(data.error || "Failed to add candidate", "error");
     }
     setAddLoading(false);
   };
@@ -77,11 +82,14 @@ export default function ApplicantsPage() {
         setUrlResult(`Candidate imported from URL successfully`);
         setResumeUrl("");
         loadCandidates();
+        toast("Resume imported from URL successfully");
       } else {
         setUrlResult(`Error: ${data.error}`);
+        toast(data.error || "Failed to import from URL", "error");
       }
     } catch {
       setUrlResult("Failed to fetch resume from URL");
+      toast("Failed to fetch resume from URL", "error");
     }
     setUrlLoading(false);
   };
@@ -96,6 +104,9 @@ export default function ApplicantsPage() {
     if (data.success) {
       setUploadResult(data.data);
       loadCandidates();
+      toast(`${data.data.candidatesCreated} candidate(s) imported`);
+    } else {
+      toast(data.error || "Upload failed", "error");
     }
     setUploadLoading(false);
   }, [jobId, loadCandidates]);
@@ -257,10 +268,10 @@ export default function ApplicantsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium text-sm">
-                      {(c.profile.name || "?").charAt(0).toUpperCase()}
+                      {(c.profile.firstName || c.profile.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{c.profile.name}</p>
+                      <p className="font-medium text-gray-900">{c.profile.firstName && c.profile.lastName ? `${c.profile.firstName} ${c.profile.lastName}` : c.profile.name}</p>
                       <p className="text-xs text-gray-500">{c.profile.email || "No email"} {c.profile.location && `· ${c.profile.location}`}</p>
                     </div>
                   </div>
@@ -273,8 +284,21 @@ export default function ApplicantsPage() {
                         <Badge size="sm">+{c.profile.skills.length - 3}</Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-gray-400">
+                    <div className="flex items-center gap-2 text-gray-400">
                       {c.source === "resume" ? <FileText className="h-4 w-4" /> : c.source === "csv" || c.source === "excel" ? <FileSpreadsheet className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Remove this candidate?")) return;
+                          const res = await fetch(`/api/candidates/${c._id}`, { method: "DELETE" });
+                          const data = await res.json();
+                          if (data.success) { toast("Candidate removed"); loadCandidates(); }
+                          else toast(data.error || "Failed to remove", "error");
+                        }}
+                        className="p-1 rounded hover:bg-red-50 hover:text-red-500 transition-colors"
+                        title="Remove candidate"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>

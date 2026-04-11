@@ -68,6 +68,21 @@ export async function PUT(
 
     await dbConnect();
 
+    // Check if screening config is being changed — invalidate old results
+    if (parsed.data.screeningConfig || parsed.data.requirements) {
+      const existingJob = await Job.findOne({ _id: jobId, userId }).select("screeningConfig requirements").lean();
+      if (existingJob) {
+        const configChanged = parsed.data.screeningConfig &&
+          JSON.stringify(parsed.data.screeningConfig) !== JSON.stringify(existingJob.screeningConfig);
+        const reqChanged = parsed.data.requirements &&
+          JSON.stringify(parsed.data.requirements) !== JSON.stringify(existingJob.requirements);
+        if (configChanged || reqChanged) {
+          await ScreeningResult.deleteMany({ jobId });
+          await ScreeningSession.updateMany({ jobId }, { status: "failed", error: "Invalidated: job requirements changed" });
+        }
+      }
+    }
+
     const job = await Job.findOneAndUpdate({ _id: jobId, userId }, parsed.data, { new: true }).lean();
     if (!job) return NextResponse.json({ success: false, error: "Job not found" }, { status: 404 });
 
