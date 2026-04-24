@@ -32,7 +32,11 @@ export function RadarChart({ skills, experience, education, culture, size = 180 
   }
 
   return (
-    <svg width={size} height={size}>
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      width="100%"
+      style={{ maxWidth: size, height: "auto", display: "block" }}
+    >
       {/* grid rings */}
       {[0.25, 0.5, 0.75, 1].map((f, idx) => {
         const pts = dims

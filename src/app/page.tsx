@@ -111,7 +111,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="max-w-7xl mx-auto" style={{ padding: "48px 20px 48px" }}>
-        <div className="grid gap-10 md:gap-12 items-center grid-cols-1 md:grid-cols-2">
+        <div className="grid gap-10 lg:gap-12 items-center grid-cols-1 lg:grid-cols-2">
           <div>
             <div
               style={{
@@ -196,9 +196,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Funnel scene (replaces the Globe) — self-contained, no side labels */}
+          {/* Desktop (≥lg): the full animated FunnelScene. Needs ≥480px of
+              horizontal breathing room to not overflow. */}
           <div
-            className="hidden md:flex"
+            className="hidden lg:flex"
             style={{
               justifyContent: "center",
               alignItems: "flex-start",
@@ -207,6 +208,113 @@ export default function LandingPage() {
             }}
           >
             <FunnelScene />
+          </div>
+
+          {/* Mobile + tablet (<lg): simplified static graphic — the 3
+              ranked output cards in a row with a BrandFunnelIcon above.
+              Communicates the product concept without the animation cost
+              or the 480px-wide layout requirement. */}
+          <div className="lg:hidden flex flex-col items-center gap-6" style={{ paddingTop: 8 }}>
+            <div
+              className="torn-bg-dramatic"
+              style={
+                {
+                  width: 72,
+                  height: 72,
+                  borderRadius: 10,
+                  border: "2px solid var(--paper-text-1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  boxShadow: "3px 4px 0 var(--paper-text-1)",
+                  ["--torn-color" as string]: "var(--paper-accent)",
+                } as React.CSSProperties
+              }
+            >
+              <BrandFunnelIcon size={48} />
+            </div>
+            <div
+              className="grid grid-cols-3 gap-3 w-full"
+              style={{ maxWidth: 360 }}
+            >
+              {[
+                { rank: 1, score: 94, stars: 5 },
+                { rank: 2, score: 92, stars: 4 },
+                { rank: 3, score: 90, stars: 4 },
+              ].map((o) => (
+                <div
+                  key={o.rank}
+                  style={{
+                    position: "relative",
+                    padding: "10px 8px 12px",
+                    background: "var(--paper-card)",
+                    border: "1.8px solid var(--paper-accent)",
+                    borderRadius: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 6,
+                    boxShadow: "2px 3px 0 var(--paper-text-1), 0 6px 18px rgba(79,70,229,0.2)",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      top: -8,
+                      right: -6,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      background: "var(--paper-accent)",
+                      border: "1.5px solid var(--paper-text-1)",
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "1px 1px 0 var(--paper-text-1)",
+                    }}
+                  >
+                    {o.rank}
+                  </span>
+                  {/* person silhouette */}
+                  <svg width={36} height={36} viewBox="0 0 40 40" aria-hidden="true" className="lucide no-sketch">
+                    <circle cx="20" cy="20" r="19" fill="var(--paper-card)" stroke="var(--paper-accent)" strokeWidth="1.6" opacity="0.95" />
+                    <circle cx="20" cy="15" r="5.5" fill="none" stroke="var(--paper-accent)" strokeWidth="1.4" />
+                    <path d="M 9 33 C 10 25, 15 22, 20 22 C 25 22, 30 25, 31 33" fill="none" stroke="var(--paper-accent)" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                  {/* stars */}
+                  <div style={{ display: "flex", gap: 1.5 }}>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <svg key={i} width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          d="M12 2 L15 9 L22 9 L16.5 13.5 L19 21 L12 17 L5 21 L7.5 13.5 L2 9 L9 9 Z"
+                          fill={i < o.stars ? "var(--paper-accent)" : "none"}
+                          stroke="var(--paper-accent)"
+                          strokeWidth="1.5"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: "var(--paper-accent)", lineHeight: 1 }}>
+                    {o.score}%
+                  </div>
+                </div>
+              ))}
+            </div>
+            <span
+              style={{
+                fontSize: 15,
+                color: "var(--paper-text-3)",
+                textAlign: "center",
+              }}
+            >
+              Best candidates, ranked for you
+            </span>
           </div>
         </div>
       </section>

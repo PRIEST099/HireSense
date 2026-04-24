@@ -745,7 +745,7 @@ export default function ResultsPage() {
 
         {showFilters && (
           <PaperCard className="mb-4">
-            <div className="flex flex-wrap items-center gap-6">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6">
               <div>
                 <label
                   style={{
