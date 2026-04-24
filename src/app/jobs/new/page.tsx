@@ -7,9 +7,10 @@ import { useToast } from "@/components/ui/Toast";
 import { useAppDispatch } from "@/store/hooks";
 import { createJob } from "@/store/slices/jobsSlice";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input, TextArea, Select } from "@/components/ui/Input";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperInput, PaperTextArea, PaperSelect } from "@/components/paper/PaperInput";
+import { PaperBadge } from "@/components/paper/PaperBadge";
 import { X } from "lucide-react";
 
 const JOB_TYPES = [
@@ -29,7 +30,6 @@ export default function NewJobPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Step 1: Basic info
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [department, setDepartment] = useState("");
@@ -37,14 +37,12 @@ export default function NewJobPage() {
   const [type, setType] = useState("full-time");
   const [description, setDescription] = useState("");
 
-  // Step 2: Requirements
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [expMin, setExpMin] = useState(0);
   const [expMax, setExpMax] = useState(10);
   const [education, setEducation] = useState("");
 
-  // Step 3: Screening config
   const [shortlistSize, setShortlistSize] = useState<10 | 20>(10);
   const [weightSkills, setWeightSkills] = useState(40);
   const [weightExperience, setWeightExperience] = useState(30);
@@ -104,77 +102,201 @@ export default function NewJobPage() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Job</h1>
+        <h1
+          style={{
+            fontSize: 34,
+            fontWeight: 700,
+            color: "var(--paper-text-1)",
+            letterSpacing: "-0.01em",
+            marginBottom: 24,
+          }}
+        >
+          Create New Job
+        </h1>
 
         {/* Progress steps */}
         <div className="flex items-center gap-2 mb-8">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center gap-2 flex-1">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"
-                }`}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 5,
+                  border: step >= s ? "2px solid var(--paper-text-1)" : "1.5px solid var(--paper-border)",
+                  background: step >= s ? "var(--paper-accent)" : "var(--paper-card)",
+                  color: step >= s ? "#fff" : "var(--paper-text-3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 17,
+                  fontWeight: 700,
+                  boxShadow: step >= s ? "1px 2px 0 var(--paper-text-1)" : "var(--paper-shadow)",
+                  flexShrink: 0,
+                  fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                }}
               >
                 {s}
               </div>
-              <span className="text-sm text-gray-600 hidden sm:inline">
+              <span
+                style={{ fontSize: 17, color: step >= s ? "var(--paper-text-1)" : "var(--paper-text-3)" }}
+                className="hidden sm:inline"
+              >
                 {s === 1 ? "Basics" : s === 2 ? "Requirements" : "Screening"}
               </span>
-              {s < 3 && <div className={`flex-1 h-0.5 ${step > s ? "bg-blue-600" : "bg-gray-200"}`} />}
+              {s < 3 && (
+                <div
+                  style={{
+                    flex: 1,
+                    height: 2,
+                    background: step > s ? "var(--paper-accent)" : "var(--paper-border)",
+                    borderRadius: 1,
+                  }}
+                />
+              )}
             </div>
           ))}
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>
+          <div
+            style={{
+              background: "var(--paper-red-soft)",
+              color: "var(--paper-red)",
+              fontSize: 17,
+              padding: "10px 14px",
+              borderRadius: 5,
+              border: "1.5px solid rgba(185,28,28,0.25)",
+              marginBottom: 16,
+            }}
+          >
+            {error}
+          </div>
         )}
 
-        {/* Step 1: Basic Info */}
         {step === 1 && (
-          <Card>
-            <CardTitle>Basic Information</CardTitle>
-            <div className="space-y-4 mt-4">
-              <Input label="Job Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Frontend Engineer" required />
+          <PaperCard>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+              Basic Information
+            </h2>
+            <div className="space-y-4">
+              <PaperInput
+                label="Job Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Senior Frontend Engineer"
+                required
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Corp" required />
-                <Input label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Engineering" />
+                <PaperInput
+                  label="Company"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="Acme Corp"
+                  required
+                />
+                <PaperInput
+                  label="Department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="Engineering"
+                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Kigali, Rwanda" required />
-                <Select label="Job Type" value={type} onChange={(e) => setType(e.target.value)} options={JOB_TYPES} />
+                <PaperInput
+                  label="Location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Kigali, Rwanda"
+                  required
+                />
+                <PaperSelect
+                  label="Job Type"
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  options={JOB_TYPES}
+                />
               </div>
-              <TextArea label="Job Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the role, responsibilities, and what you're looking for..." rows={5} required />
+              <PaperTextArea
+                label="Job Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the role, responsibilities, and what you're looking for..."
+                rows={5}
+                required
+              />
               <div className="flex justify-end">
-                <Button onClick={() => setStep(2)} disabled={!title || !company || !location || !description}>
+                <PaperButton onClick={() => setStep(2)} disabled={!title || !company || !location || !description}>
                   Next: Requirements
-                </Button>
+                </PaperButton>
               </div>
             </div>
-          </Card>
+          </PaperCard>
         )}
 
-        {/* Step 2: Requirements */}
         {step === 2 && (
-          <Card>
-            <CardTitle>Requirements</CardTitle>
-            <div className="space-y-4 mt-4">
+          <PaperCard>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+              Requirements
+            </h2>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 17,
+                    fontWeight: 600,
+                    color: "var(--paper-text-2)",
+                    marginBottom: 6,
+                  }}
+                >
+                  Required Skills
+                </label>
                 <div className="flex gap-2">
-                  <Input
+                  <PaperInput
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
                     placeholder="Type a skill and press Enter"
                     className="flex-1"
                   />
-                  <Button onClick={addSkill} variant="secondary" type="button">Add</Button>
+                  <PaperButton onClick={addSkill} variant="ghost" type="button">
+                    Add
+                  </PaperButton>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   {skills.map((skill) => (
-                    <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                    <span
+                      key={skill}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "3px 10px",
+                        background: "var(--paper-accent-soft)",
+                        color: "var(--paper-accent)",
+                        border: "1.5px solid var(--paper-border-acc)",
+                        borderRadius: 4,
+                        fontSize: 16,
+                        fontWeight: 600,
+                      }}
+                    >
                       {skill}
-                      <button onClick={() => removeSkill(skill)} className="hover:text-blue-900">
+                      <button
+                        onClick={() => removeSkill(skill)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--paper-accent)",
+                          display: "flex",
+                        }}
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </span>
@@ -183,52 +305,99 @@ export default function NewJobPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input label="Min Experience (years)" type="number" value={expMin} onChange={(e) => setExpMin(Number(e.target.value))} min={0} />
-                <Input label="Max Experience (years)" type="number" value={expMax} onChange={(e) => setExpMax(Number(e.target.value))} min={0} />
+                <PaperInput
+                  label="Min Experience (years)"
+                  type="number"
+                  value={expMin}
+                  onChange={(e) => setExpMin(Number(e.target.value))}
+                  min={0}
+                />
+                <PaperInput
+                  label="Max Experience (years)"
+                  type="number"
+                  value={expMax}
+                  onChange={(e) => setExpMax(Number(e.target.value))}
+                  min={0}
+                />
               </div>
 
-              <Input label="Education Requirement" value={education} onChange={(e) => setEducation(e.target.value)} placeholder="Bachelor's in Computer Science or equivalent" />
+              <PaperInput
+                label="Education Requirement"
+                value={education}
+                onChange={(e) => setEducation(e.target.value)}
+                placeholder="Bachelor's in Computer Science or equivalent"
+              />
 
               <div className="flex justify-between">
-                <Button variant="secondary" onClick={() => setStep(1)}>Back</Button>
-                <Button onClick={() => setStep(3)} disabled={skills.length === 0}>
+                <PaperButton variant="ghost" onClick={() => setStep(1)}>
+                  Back
+                </PaperButton>
+                <PaperButton onClick={() => setStep(3)} disabled={skills.length === 0}>
                   Next: Screening Config
-                </Button>
+                </PaperButton>
               </div>
             </div>
-          </Card>
+          </PaperCard>
         )}
 
-        {/* Step 3: Screening Config */}
         {step === 3 && (
-          <Card>
-            <CardTitle>AI Screening Configuration</CardTitle>
-            <div className="space-y-6 mt-4">
+          <PaperCard>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+              AI Screening Configuration
+            </h2>
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Shortlist Size</label>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 17,
+                    fontWeight: 600,
+                    color: "var(--paper-text-2)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Shortlist Size
+                </label>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => setShortlistSize(10)}
-                    className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                      shortlistSize === 10 ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    Top 10
-                  </button>
-                  <button
-                    onClick={() => setShortlistSize(20)}
-                    className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                      shortlistSize === 20 ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    Top 20
-                  </button>
+                  {[10, 20].map((size) => {
+                    const active = shortlistSize === size;
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => setShortlistSize(size as 10 | 20)}
+                        style={{
+                          flex: 1,
+                          padding: "12px 16px",
+                          borderRadius: 5,
+                          background: active ? "var(--paper-accent-soft)" : "var(--paper-card)",
+                          color: active ? "var(--paper-accent)" : "var(--paper-text-2)",
+                          border: active ? "1.5px solid var(--paper-border-acc)" : "1.5px solid var(--paper-border)",
+                          fontSize: 17,
+                          fontWeight: active ? 700 : 500,
+                          fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                          cursor: "pointer",
+                          boxShadow: "var(--paper-shadow)",
+                        }}
+                      >
+                        Top {size}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Scoring Weights <span className={`text-xs ${totalWeight === 100 ? "text-green-600" : "text-red-600"}`}>(Total: {totalWeight}%)</span>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: 17,
+                    fontWeight: 600,
+                    color: "var(--paper-text-2)",
+                    marginBottom: 10,
+                  }}
+                >
+                  Scoring Weights{" "}
+                  <PaperBadge variant={totalWeight === 100 ? "success" : "danger"}>Total: {totalWeight}%</PaperBadge>
                 </label>
                 <div className="space-y-3">
                   {[
@@ -238,29 +407,44 @@ export default function NewJobPage() {
                     { label: "Culture Fit", value: weightCulture, setter: setWeightCulture },
                   ].map((w) => (
                     <div key={w.label} className="flex items-center gap-4">
-                      <span className="text-sm text-gray-600 w-28">{w.label}</span>
+                      <span style={{ fontSize: 17, color: "var(--paper-text-3)", width: 110, flexShrink: 0 }}>
+                        {w.label}
+                      </span>
                       <input
                         type="range"
                         min={0}
                         max={100}
                         value={w.value}
                         onChange={(e) => w.setter(Number(e.target.value))}
-                        className="flex-1 accent-blue-600"
+                        className="flex-1"
                       />
-                      <span className="text-sm font-medium text-gray-900 w-10 text-right">{w.value}%</span>
+                      <span
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "var(--paper-text-1)",
+                          width: 44,
+                          textAlign: "right",
+                          fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                        }}
+                      >
+                        {w.value}%
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="flex justify-between">
-                <Button variant="secondary" onClick={() => setStep(2)}>Back</Button>
-                <Button onClick={handleSubmit} loading={loading} disabled={totalWeight !== 100}>
+                <PaperButton variant="ghost" onClick={() => setStep(2)}>
+                  Back
+                </PaperButton>
+                <PaperButton onClick={handleSubmit} loading={loading} disabled={totalWeight !== 100}>
                   Create Job
-                </Button>
+                </PaperButton>
               </div>
             </div>
-          </Card>
+          </PaperCard>
         )}
       </div>
     </AppLayout>

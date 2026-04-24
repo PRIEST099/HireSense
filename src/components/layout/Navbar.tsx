@@ -1,9 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import Link from "next/link";
-import { Brain, LogOut, Menu } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Menu, LogOut } from "lucide-react";
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -12,40 +10,102 @@ interface NavbarProps {
 export function Navbar({ onToggleSidebar }: NavbarProps) {
   const { data: session } = useSession();
 
-  return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-          >
-            <Menu className="h-5 w-5 text-gray-600" />
-          </button>
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="bg-blue-600 p-1.5 rounded-lg">
-              <Brain className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-gray-900">HireSense AI</span>
-          </Link>
-        </div>
+  const userName = session?.user?.name || "User";
+  const company = (session?.user as Record<string, unknown> | undefined)?.company as string | undefined;
+  const initial = userName.charAt(0).toUpperCase();
 
-        {session?.user && (
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-              <p className="text-xs text-gray-500">{(session.user as Record<string, unknown>).company as string}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+  return (
+    <header
+      className="paper-sketch-divider-bottom"
+      style={{
+        height: 52,
+        background: "transparent",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 16px",
+        gap: 12,
+        flexShrink: 0,
+      }}
+    >
+      {/* Mobile menu toggle */}
+      <button
+        onClick={onToggleSidebar}
+        className="lg:hidden"
+        style={{
+          padding: 6,
+          borderRadius: 4,
+          background: "transparent",
+          border: "1.5px solid var(--paper-border)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        aria-label="Toggle sidebar"
+      >
+        <Menu className="h-4 w-4" style={{ color: "var(--paper-text-2)" }} />
+      </button>
+
+      <div style={{ flex: 1 }} />
+
+      {session?.user && (
+        <>
+          <div style={{ textAlign: "right" }} className="hidden sm:block">
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--paper-text-1)",
+                lineHeight: 1.1,
+              }}
             >
-              <LogOut className="h-4 w-4" />
-            </Button>
+              {userName}
+            </div>
+            {company && (
+              <div style={{ fontSize: 17, color: "var(--paper-text-3)", lineHeight: 1.1, marginTop: 2 }}>{company}</div>
+            )}
           </div>
-        )}
-      </div>
+          <div
+            className="torn-bg-dramatic"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 5,
+              border: "2px solid var(--paper-text-1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 17,
+              fontWeight: 700,
+              color: "#fff",
+              boxShadow: "1px 2px 0 var(--paper-text-1)",
+              fontFamily: "var(--font-caveat), 'Caveat', cursive",
+              flexShrink: 0,
+              ["--torn-color" as string]: "var(--paper-accent)",
+            } as React.CSSProperties}
+          >
+            {initial}
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            title="Sign out"
+            aria-label="Sign out"
+            style={{
+              padding: 6,
+              borderRadius: 4,
+              background: "var(--paper-card)",
+              border: "1.5px solid var(--paper-border)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "var(--paper-shadow)",
+            }}
+          >
+            <LogOut className="h-4 w-4" style={{ color: "var(--paper-text-2)" }} />
+          </button>
+        </>
+      )}
     </header>
   );
 }

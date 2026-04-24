@@ -4,9 +4,10 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Brain } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperInput } from "@/components/paper/PaperInput";
+import { BrandFunnelIcon } from "@/components/paper/BrandFunnelIcon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,25 +36,64 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50/60 via-transparent to-purple-50/60 px-4 bg-grain">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 paper-grid"
+      style={{ backgroundColor: "var(--paper-bg)" }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center bg-blue-600 p-3 rounded-2xl mb-4">
-            <Brain className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 mt-1">Sign in to HireSense AI</p>
+          <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <div
+              className="torn-bg-dramatic"
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 6,
+                border: "2px solid var(--paper-text-1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                boxShadow: "2px 3px 0 var(--paper-text-1)",
+                ["--torn-color" as string]: "var(--paper-accent)",
+              } as React.CSSProperties}
+            >
+              <BrandFunnelIcon size={30} />
+            </div>
+            <span style={{ fontSize: 26, fontWeight: 700, color: "var(--paper-text-1)" }}>HireSense AI</span>
+          </Link>
+          <h1
+            style={{
+              fontSize: 30,
+              fontWeight: 700,
+              color: "var(--paper-text-1)",
+              marginTop: 20,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Welcome back
+          </h1>
+          <p style={{ fontSize: 16, color: "var(--paper-text-3)", marginTop: 4 }}>Sign in to continue screening.</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <PaperCard padding="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">
+              <div
+                style={{
+                  background: "var(--paper-red-soft)",
+                  color: "var(--paper-red)",
+                  fontSize: 17,
+                  padding: "10px 14px",
+                  borderRadius: 5,
+                  border: "1.5px solid rgba(185,28,28,0.25)",
+                }}
+              >
                 {error}
               </div>
             )}
 
-            <Input
+            <PaperInput
               label="Email"
               type="email"
               value={email}
@@ -62,7 +102,7 @@ export default function LoginPage() {
               required
             />
 
-            <Input
+            <PaperInput
               label="Password"
               type="password"
               value={password}
@@ -71,18 +111,28 @@ export default function LoginPage() {
               required
             />
 
-            <Button type="submit" loading={loading} className="w-full" size="lg">
+            <PaperButton type="submit" loading={loading} className="w-full" size="lg">
               Sign in
-            </Button>
+            </PaperButton>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p
+            style={{
+              marginTop: 20,
+              textAlign: "center",
+              fontSize: 17,
+              color: "var(--paper-text-3)",
+            }}
+          >
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link
+              href="/register"
+              style={{ color: "var(--paper-accent)", fontWeight: 700, textDecoration: "none" }}
+            >
               Sign up
             </Link>
           </p>
-        </div>
+        </PaperCard>
       </div>
     </div>
   );

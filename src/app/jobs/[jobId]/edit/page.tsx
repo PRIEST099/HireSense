@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input, TextArea, Select } from "@/components/ui/Input";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperInput, PaperTextArea, PaperSelect } from "@/components/paper/PaperInput";
+import { PaperBadge } from "@/components/paper/PaperBadge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
 import { useToast } from "@/components/ui/Toast";
@@ -92,9 +93,26 @@ export default function EditJobPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, company, department, location, type, description,
-          requirements: { skills, experience: { min: expMin, max: expMax }, education, certifications: [], languages: [] },
-          screeningConfig: { shortlistSize, weightSkills, weightExperience, weightEducation, weightCultureFit: weightCulture },
+          title,
+          company,
+          department,
+          location,
+          type,
+          description,
+          requirements: {
+            skills,
+            experience: { min: expMin, max: expMax },
+            education,
+            certifications: [],
+            languages: [],
+          },
+          screeningConfig: {
+            shortlistSize,
+            weightSkills,
+            weightExperience,
+            weightEducation,
+            weightCultureFit: weightCulture,
+          },
         }),
       });
       const data = await res.json();
@@ -109,77 +127,225 @@ export default function EditJobPage() {
 
   const totalWeight = weightSkills + weightExperience + weightEducation + weightCulture;
 
-  if (loading) return <AppLayout><PageLoader /></AppLayout>;
-  if (error && !title) return <AppLayout><div className="max-w-2xl mx-auto"><ErrorBanner message={error} onRetry={() => window.location.reload()} /></div></AppLayout>;
+  if (loading)
+    return (
+      <AppLayout>
+        <PageLoader />
+      </AppLayout>
+    );
+  if (error && !title)
+    return (
+      <AppLayout>
+        <div className="max-w-2xl mx-auto">
+          <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+        </div>
+      </AppLayout>
+    );
 
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Job</h1>
+        <h1
+          style={{
+            fontSize: 34,
+            fontWeight: 700,
+            color: "var(--paper-text-1)",
+            letterSpacing: "-0.01em",
+            marginBottom: 24,
+          }}
+        >
+          Edit Job
+        </h1>
 
-        {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">{error}</div>}
-
-        <Card className="mb-6">
-          <CardTitle>Basic Information</CardTitle>
-          <div className="space-y-4 mt-4">
-            <Input label="Job Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Company" value={company} onChange={(e) => setCompany(e.target.value)} required />
-              <Input label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
-              <Select label="Job Type" value={type} onChange={(e) => setType(e.target.value)} options={JOB_TYPES} />
-            </div>
-            <TextArea label="Job Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} required />
+        {error && (
+          <div
+            style={{
+              background: "var(--paper-red-soft)",
+              color: "var(--paper-red)",
+              fontSize: 17,
+              padding: "10px 14px",
+              borderRadius: 5,
+              border: "1.5px solid rgba(185,28,28,0.25)",
+              marginBottom: 16,
+            }}
+          >
+            {error}
           </div>
-        </Card>
+        )}
 
-        <Card className="mb-6">
-          <CardTitle>Requirements</CardTitle>
-          <div className="space-y-4 mt-4">
+        <PaperCard className="mb-6">
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+            Basic Information
+          </h2>
+          <div className="space-y-4">
+            <PaperInput label="Job Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PaperInput label="Company" value={company} onChange={(e) => setCompany(e.target.value)} required />
+              <PaperInput label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PaperInput label="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
+              <PaperSelect
+                label="Job Type"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                options={JOB_TYPES}
+              />
+            </div>
+            <PaperTextArea
+              label="Job Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              required
+            />
+          </div>
+        </PaperCard>
+
+        <PaperCard className="mb-6">
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+            Requirements
+          </h2>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "var(--paper-text-2)",
+                  marginBottom: 6,
+                }}
+              >
+                Required Skills
+              </label>
               <div className="flex gap-2">
-                <Input value={skillInput} onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } }}
-                  placeholder="Type a skill and press Enter" className="flex-1" />
-                <Button onClick={addSkill} variant="secondary" type="button">Add</Button>
+                <PaperInput
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addSkill();
+                    }
+                  }}
+                  placeholder="Type a skill and press Enter"
+                  className="flex-1"
+                />
+                <PaperButton onClick={addSkill} variant="ghost" type="button">
+                  Add
+                </PaperButton>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {skills.map((skill) => (
-                  <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                  <span
+                    key={skill}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "3px 10px",
+                      background: "var(--paper-accent-soft)",
+                      color: "var(--paper-accent)",
+                      border: "1.5px solid var(--paper-border-acc)",
+                      borderRadius: 4,
+                      fontSize: 16,
+                      fontWeight: 600,
+                    }}
+                  >
                     {skill}
-                    <button onClick={() => setSkills(skills.filter((s) => s !== skill))} className="hover:text-blue-900"><X className="h-3 w-3" /></button>
+                    <button
+                      onClick={() => setSkills(skills.filter((s) => s !== skill))}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--paper-accent)",
+                        display: "flex",
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   </span>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Min Experience (years)" type="number" value={expMin} onChange={(e) => setExpMin(Number(e.target.value))} min={0} />
-              <Input label="Max Experience (years)" type="number" value={expMax} onChange={(e) => setExpMax(Number(e.target.value))} min={0} />
+              <PaperInput
+                label="Min Experience (years)"
+                type="number"
+                value={expMin}
+                onChange={(e) => setExpMin(Number(e.target.value))}
+                min={0}
+              />
+              <PaperInput
+                label="Max Experience (years)"
+                type="number"
+                value={expMax}
+                onChange={(e) => setExpMax(Number(e.target.value))}
+                min={0}
+              />
             </div>
-            <Input label="Education" value={education} onChange={(e) => setEducation(e.target.value)} />
+            <PaperInput label="Education" value={education} onChange={(e) => setEducation(e.target.value)} />
           </div>
-        </Card>
+        </PaperCard>
 
-        <Card className="mb-6">
-          <CardTitle>Screening Configuration</CardTitle>
-          <div className="space-y-6 mt-4">
+        <PaperCard className="mb-6">
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 16 }}>
+            Screening Configuration
+          </h2>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shortlist Size</label>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "var(--paper-text-2)",
+                  marginBottom: 8,
+                }}
+              >
+                Shortlist Size
+              </label>
               <div className="flex gap-3">
-                {([10, 20] as const).map((size) => (
-                  <button key={size} onClick={() => setShortlistSize(size)}
-                    className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${shortlistSize === size ? "border-blue-600 bg-blue-50 text-blue-700" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
-                    Top {size}
-                  </button>
-                ))}
+                {([10, 20] as const).map((size) => {
+                  const active = shortlistSize === size;
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => setShortlistSize(size)}
+                      style={{
+                        flex: 1,
+                        padding: "12px 16px",
+                        borderRadius: 5,
+                        background: active ? "var(--paper-accent-soft)" : "var(--paper-card)",
+                        color: active ? "var(--paper-accent)" : "var(--paper-text-2)",
+                        border: active ? "1.5px solid var(--paper-border-acc)" : "1.5px solid var(--paper-border)",
+                        fontSize: 17,
+                        fontWeight: active ? 700 : 500,
+                        fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                        cursor: "pointer",
+                        boxShadow: "var(--paper-shadow)",
+                      }}
+                    >
+                      Top {size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Scoring Weights <span className={`text-xs ${totalWeight === 100 ? "text-green-600" : "text-red-600"}`}>(Total: {totalWeight}%)</span>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "var(--paper-text-2)",
+                  marginBottom: 10,
+                }}
+              >
+                Scoring Weights{" "}
+                <PaperBadge variant={totalWeight === 100 ? "success" : "danger"}>Total: {totalWeight}%</PaperBadge>
               </label>
               <div className="space-y-3">
                 {[
@@ -189,21 +355,43 @@ export default function EditJobPage() {
                   { label: "Culture Fit", value: weightCulture, setter: setWeightCulture },
                 ].map((w) => (
                   <div key={w.label} className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600 w-28">{w.label}</span>
-                    <input type="range" min={0} max={100} value={w.value} onChange={(e) => w.setter(Number(e.target.value))} className="flex-1 accent-blue-600" />
-                    <span className="text-sm font-medium text-gray-900 w-10 text-right">{w.value}%</span>
+                    <span style={{ fontSize: 17, color: "var(--paper-text-3)", width: 110, flexShrink: 0 }}>
+                      {w.label}
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={w.value}
+                      onChange={(e) => w.setter(Number(e.target.value))}
+                      className="flex-1"
+                    />
+                    <span
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: "var(--paper-text-1)",
+                        width: 44,
+                        textAlign: "right",
+                        fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                      }}
+                    >
+                      {w.value}%
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </Card>
+        </PaperCard>
 
         <div className="flex justify-between">
-          <Button variant="secondary" onClick={() => router.push(`/jobs/${jobId}`)}>Cancel</Button>
-          <Button onClick={handleSave} loading={saving} disabled={totalWeight !== 100 || !title || !company}>
+          <PaperButton variant="ghost" onClick={() => router.push(`/jobs/${jobId}`)}>
+            Cancel
+          </PaperButton>
+          <PaperButton onClick={handleSave} loading={saving} disabled={totalWeight !== 100 || !title || !company}>
             Save Changes
-          </Button>
+          </PaperButton>
         </div>
       </div>
     </AppLayout>

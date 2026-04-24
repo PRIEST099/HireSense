@@ -5,13 +5,61 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Briefcase, Users, Brain, TrendingUp, Plus, Sparkles } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/Badge";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperStatusBadge } from "@/components/paper/PaperBadge";
 import { PageLoader } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
+import { useCountUp } from "@/hooks/useCountUp";
 import type { Job } from "@/types/job";
+
+interface StatItem {
+  label: string;
+  value: number;
+  icon: typeof Briefcase;
+  color: string;
+}
+
+function StatCard({ label, value, icon: Icon, color, index }: StatItem & { index: number }) {
+  const display = useCountUp(value, 900, 150 + index * 75);
+  return (
+    <PaperCard padding="p-5" animationDelay={index * 75}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div
+          className="torn-bg-dramatic"
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 6,
+            border: `1.5px solid ${color}33`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            ["--torn-color" as string]: `${color}14`,
+          } as React.CSSProperties}
+        >
+          <Icon className="h-5 w-5" style={{ color }} />
+        </div>
+        <div>
+          <div
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              color: "var(--paper-text-1)",
+              lineHeight: 1,
+              fontFamily: "var(--font-caveat), 'Caveat', cursive",
+            }}
+          >
+            {display}
+          </div>
+          <div style={{ fontSize: 16, color: "var(--paper-text-3)", marginTop: 2 }}>{label}</div>
+        </div>
+      </div>
+    </PaperCard>
+  );
+}
 
 export default function DashboardPage() {
   const { status } = useSession({ required: true });
@@ -24,10 +72,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [jobsRes, statsRes] = await Promise.all([
-          fetch("/api/jobs"),
-          fetch("/api/stats"),
-        ]);
+        const [jobsRes, statsRes] = await Promise.all([fetch("/api/jobs"), fetch("/api/stats")]);
         if (!jobsRes.ok) throw new Error("Failed to load jobs");
         const data = await jobsRes.json();
         const statsData = statsRes.ok ? await statsRes.json() : { success: false };
@@ -38,7 +83,9 @@ export default function DashboardPage() {
             totalJobs: jobList.length,
             activeJobs: jobList.filter((j) => j.status === "open" || j.status === "screening").length,
             totalCandidates: statsData.success ? statsData.data.totalCandidates : 0,
-            screeningsRun: statsData.success ? statsData.data.screeningsRun : jobList.filter((j) => j.status !== "draft").length,
+            screeningsRun: statsData.success
+              ? statsData.data.screeningsRun
+              : jobList.filter((j) => j.status !== "draft").length,
           });
         }
       } catch {
@@ -50,50 +97,58 @@ export default function DashboardPage() {
   }, [status]);
 
   if (status === "loading" || loading) {
-    return <AppLayout><PageLoader /></AppLayout>;
+    return (
+      <AppLayout>
+        <PageLoader />
+      </AppLayout>
+    );
   }
 
-  const statCards = [
-    { label: "Total Jobs", value: stats.totalJobs, icon: Briefcase, color: "bg-blue-100 text-blue-600" },
-    { label: "Active Jobs", value: stats.activeJobs, icon: TrendingUp, color: "bg-green-100 text-green-600" },
-    { label: "Screenings Run", value: stats.screeningsRun, icon: Brain, color: "bg-purple-100 text-purple-600" },
-    { label: "Total Candidates", value: stats.totalCandidates, icon: Users, color: "bg-orange-100 text-orange-600" },
+  const statCards: StatItem[] = [
+    { label: "Total Jobs", value: stats.totalJobs, icon: Briefcase, color: "#4F46E5" },
+    { label: "Active Jobs", value: stats.activeJobs, icon: TrendingUp, color: "#0D9488" },
+    { label: "Screenings Run", value: stats.screeningsRun, icon: Brain, color: "#7C3AED" },
+    { label: "Total Candidates", value: stats.totalCandidates, icon: Users, color: "#B45309" },
   ];
 
   return (
     <AppLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Overview of your recruitment activity</p>
+      <div style={{ marginBottom: 28 }}>
+        <h1
+          style={{
+            fontSize: 34,
+            fontWeight: 700,
+            color: "var(--paper-text-1)",
+            letterSpacing: "-0.01em",
+            lineHeight: 1.1,
+          }}
+        >
+          Dashboard
+        </h1>
+        <p style={{ fontSize: 16, color: "var(--paper-text-3)", marginTop: 4 }}>Overview of your recruitment activity.</p>
       </div>
 
-      {error && <div className="mb-6"><ErrorBanner message={error} onRetry={() => window.location.reload()} /></div>}
+      {error && (
+        <div style={{ marginBottom: 20 }}>
+          <ErrorBanner message={error} onRetry={() => window.location.reload()} />
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statCards.map((stat) => (
-          <Card key={stat.label}>
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${stat.color}`}>
-                <stat.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-              </div>
-            </div>
-          </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ marginBottom: 28 }}>
+        {statCards.map((stat, i) => (
+          <StatCard key={stat.label} {...stat} index={i} />
         ))}
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Jobs</h2>
-        <Button onClick={() => router.push("/jobs/new")} size="sm">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)" }}>Recent Jobs</h2>
+        <PaperButton onClick={() => router.push("/jobs/new")} size="sm">
           <Plus className="h-4 w-4" /> New Job
-        </Button>
+        </PaperButton>
       </div>
 
       {jobs.length === 0 ? (
-        <Card>
+        <PaperCard>
           <EmptyState
             icon={Briefcase}
             title="No jobs yet"
@@ -101,35 +156,56 @@ export default function DashboardPage() {
             action={{ label: "Create Job", onClick: () => router.push("/jobs/new") }}
           />
           <div className="flex justify-center mt-2 pb-2">
-            <Button variant="outline" size="sm" onClick={async () => {
-              const res = await fetch("/api/seed", { method: "POST" });
-              const data = await res.json();
-              if (data.success) window.location.reload();
-            }}>
+            <PaperButton
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                const res = await fetch("/api/seed", { method: "POST" });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+              }}
+            >
               <Sparkles className="h-4 w-4" /> Load Demo Data
-            </Button>
+            </PaperButton>
           </div>
-        </Card>
+        </PaperCard>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.slice(0, 6).map((job) => (
-            <Card
-              key={job._id}
-              className="cursor-pointer hover:border-blue-300 transition-colors"
-            >
-              <div onClick={() => router.push(`/jobs/${job._id}`)}>
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 line-clamp-1">{job.title}</h3>
-                  <StatusBadge status={job.status} />
-                </div>
-                <p className="text-sm text-gray-500 mb-2">{job.company} &middot; {job.location}</p>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <span>{job.requirements.skills.length} required skills</span>
-                  <span>&middot;</span>
-                  <span>{new Date(job.createdAt).toLocaleDateString()}</span>
-                </div>
+          {jobs.slice(0, 6).map((job, idx) => (
+            <PaperCard key={job._id} animationDelay={idx * 75} onClick={() => router.push(`/jobs/${job._id}`)}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: 19,
+                    fontWeight: 700,
+                    color: "var(--paper-text-1)",
+                    lineHeight: 1.2,
+                  }}
+                  className="line-clamp-1"
+                >
+                  {job.title}
+                </h3>
+                <PaperStatusBadge status={job.status} />
               </div>
-            </Card>
+              <p style={{ fontSize: 17, color: "var(--paper-text-3)", marginBottom: 8 }}>
+                {job.company} &middot; {job.location}
+              </p>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 17, color: "var(--paper-text-4)" }}
+              >
+                <span>{job.requirements.skills.length} required skills</span>
+                <span>&middot;</span>
+                <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+              </div>
+            </PaperCard>
           ))}
         </div>
       )}

@@ -1,5 +1,5 @@
 import { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { PaperButton } from "@/components/paper/PaperButton";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -14,14 +14,30 @@ interface EmptyStateProps {
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="rounded-full bg-gray-100 p-4 mb-4">
-        <Icon className="h-8 w-8 text-gray-400" />
+      <div
+        style={{
+          borderRadius: 8,
+          background: "var(--paper-accent-soft)",
+          border: "1.5px solid var(--paper-border-acc)",
+          padding: 18,
+          marginBottom: 16,
+        }}
+      >
+        <Icon className="h-8 w-8" style={{ color: "var(--paper-accent)" }} />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-1">{title}</h3>
-      <p className="text-sm text-gray-500 mb-6 max-w-sm">{description}</p>
-      {action && (
-        <Button onClick={action.onClick}>{action.label}</Button>
-      )}
+      <h3 style={{ fontSize: 22, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 4 }}>{title}</h3>
+      <p
+        style={{
+          fontSize: 17,
+          color: "var(--paper-text-3)",
+          maxWidth: 380,
+          lineHeight: 1.55,
+          marginBottom: 20,
+        }}
+      >
+        {description}
+      </p>
+      {action && <PaperButton onClick={action.onClick}>{action.label}</PaperButton>}
     </div>
   );
 }

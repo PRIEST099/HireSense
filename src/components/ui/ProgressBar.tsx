@@ -7,12 +7,12 @@ interface ProgressBarProps {
   size?: "sm" | "md";
 }
 
-const colors = {
-  blue: "bg-blue-600",
-  green: "bg-green-600",
-  yellow: "bg-yellow-500",
-  red: "bg-red-600",
-  purple: "bg-purple-600",
+const colorMap: Record<string, string> = {
+  blue: "var(--paper-accent)",
+  green: "var(--paper-green)",
+  yellow: "var(--paper-amber)",
+  red: "var(--paper-red)",
+  purple: "#7C3AED",
 };
 
 export function ProgressBar({
@@ -24,19 +24,43 @@ export function ProgressBar({
   size = "md",
 }: ProgressBarProps) {
   const pct = Math.min(Math.max((value / max) * 100, 0), 100);
+  const h = size === "sm" ? 6 : 10;
 
   return (
     <div>
       {(label || showValue) && (
         <div className="flex justify-between mb-1">
-          {label && <span className="text-xs font-medium text-gray-600">{label}</span>}
-          {showValue && <span className="text-xs font-medium text-gray-900">{Math.round(value)}</span>}
+          {label && <span style={{ fontSize: 15, fontWeight: 600, color: "var(--paper-text-3)" }}>{label}</span>}
+          {showValue && (
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "var(--paper-text-1)",
+                fontFamily: "var(--font-caveat), 'Caveat', cursive",
+              }}
+            >
+              {Math.round(value)}
+            </span>
+          )}
         </div>
       )}
-      <div className={`w-full bg-gray-200 rounded-full ${size === "sm" ? "h-1.5" : "h-2.5"}`}>
+      <div
+        style={{
+          width: "100%",
+          height: h,
+          background: "var(--paper-radar-grid)",
+          borderRadius: h / 2,
+        }}
+      >
         <div
-          className={`${colors[color]} rounded-full transition-all duration-500 ${size === "sm" ? "h-1.5" : "h-2.5"}`}
-          style={{ width: `${pct}%` }}
+          style={{
+            height: h,
+            background: colorMap[color],
+            borderRadius: h / 2,
+            width: `${pct}%`,
+            transition: "width 0.5s",
+          }}
         />
       </div>
     </div>

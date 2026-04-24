@@ -4,18 +4,36 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge, StatusBadge } from "@/components/ui/Badge";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperBadge, PaperStatusBadge } from "@/components/paper/PaperBadge";
+import { ScoreRing } from "@/components/paper/ScoreRing";
+import { RadarChart } from "@/components/paper/RadarChart";
 import { ScoreBar } from "@/components/ui/ProgressBar";
 import { PageLoader } from "@/components/ui/Spinner";
-import { ArrowLeft, Mail, Phone, MapPin, Globe, Link as LinkIcon, Award, CheckCircle, XCircle, Calendar } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Globe,
+  Link as LinkIcon,
+  Award,
+  CheckCircle,
+  XCircle,
+  Calendar,
+} from "lucide-react";
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
-import { SkillRadarChart } from "@/components/screening/SkillRadarChart";
 import type { Candidate } from "@/types/candidate";
 import type { ScreeningResult } from "@/types/screening";
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--paper-text-1)", marginBottom: 10 }}>{children}</h2>
+  );
+}
 
 export default function CandidateDetailPage() {
   useSession({ required: true });
@@ -32,7 +50,10 @@ export default function CandidateDetailPage() {
 
   useEffect(() => {
     fetch(`/api/candidates/${candidateId}`)
-      .then((r) => { if (!r.ok) throw new Error("Failed to load candidate"); return r.json(); })
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load candidate");
+        return r.json();
+      })
       .then((d) => {
         if (d.success) {
           setCandidate(d.data.candidate);
@@ -55,192 +76,352 @@ export default function CandidateDetailPage() {
     const data = await res.json();
     if (data.success && result) {
       setResult({ ...result, recruiterDecision: decision as ScreeningResult["recruiterDecision"] });
-      const label = decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
+      const label =
+        decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
       toast(`Candidate ${label}`);
     }
     setDecisionLoading(false);
   };
 
-  if (loading) return <AppLayout><PageLoader /></AppLayout>;
-  if (error || !candidate) return <AppLayout><div className="max-w-4xl mx-auto"><ErrorBanner message={error || "Candidate not found"} onRetry={() => window.location.reload()} /></div></AppLayout>;
+  if (loading)
+    return (
+      <AppLayout>
+        <PageLoader />
+      </AppLayout>
+    );
+  if (error || !candidate)
+    return (
+      <AppLayout>
+        <div className="max-w-4xl mx-auto">
+          <ErrorBanner message={error || "Candidate not found"} onRetry={() => window.location.reload()} />
+        </div>
+      </AppLayout>
+    );
 
   const p = candidate.profile;
+  const displayName = p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : p.name;
+  const initial = (p.firstName || p.name || "?").charAt(0).toUpperCase();
 
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <button
+          onClick={() => router.back()}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 16,
+            color: "var(--paper-text-3)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            marginBottom: 12,
+            fontFamily: "var(--font-caveat), 'Caveat', cursive",
+          }}
+        >
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl">
-              {(p.firstName || p.name || "?").charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : p.name}</h1>
-              {p.headline && <p className="text-sm text-gray-500 mt-0.5">{p.headline}</p>}
-              <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                {p.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {p.email}</span>}
-                {p.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {p.phone}</span>}
-                {p.location && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {p.location}</span>}
+        <PaperCard className="mb-6">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div
+                className="torn-bg-dramatic"
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 8,
+                  border: "2px solid var(--paper-text-1)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontSize: 28,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  boxShadow: "2px 3px 0 var(--paper-text-1)",
+                  fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                  ["--torn-color" as string]: "var(--paper-accent)",
+                } as React.CSSProperties}
+              >
+                {initial}
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                {p.linkedIn && <a href={p.linkedIn} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><LinkIcon className="h-3.5 w-3.5" /> LinkedIn</a>}
-                {p.portfolio && <a href={p.portfolio} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline"><Globe className="h-3.5 w-3.5" /> Portfolio</a>}
+              <div className="min-w-0">
+                <h1
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 700,
+                    color: "var(--paper-text-1)",
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {displayName}
+                </h1>
+                {p.headline && (
+                  <p style={{ fontSize: 17, color: "var(--paper-text-3)", marginTop: 4 }}>{p.headline}</p>
+                )}
+                <div
+                  className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-2"
+                  style={{ fontSize: 16, color: "var(--paper-text-3)" }}
+                >
+                  {p.email && (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3.5 w-3.5" /> {p.email}
+                    </span>
+                  )}
+                  {p.phone && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5" /> {p.phone}
+                    </span>
+                  )}
+                  {p.location && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {p.location}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-1">
+                  {p.linkedIn && (
+                    <a
+                      href={p.linkedIn}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 16,
+                        color: "var(--paper-accent)",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      <LinkIcon className="h-3.5 w-3.5" /> LinkedIn
+                    </a>
+                  )}
+                  {p.portfolio && (
+                    <a
+                      href={p.portfolio}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 16,
+                        color: "var(--paper-accent)",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      <Globe className="h-3.5 w-3.5" /> Portfolio
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
+            {result && (
+              <div className="text-center flex flex-col items-center gap-2 flex-shrink-0">
+                <ScoreRing score={result.overallScore} size={84} stroke={7} />
+                <PaperStatusBadge status={result.recommendation} />
+              </div>
+            )}
           </div>
-          {result && (
-            <div className="text-center">
-              <p className={`text-4xl font-bold ${result.overallScore >= 70 ? "text-green-600" : result.overallScore >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                {result.overallScore}
-              </p>
-              <StatusBadge status={result.recommendation} />
-            </div>
-          )}
-        </div>
+        </PaperCard>
 
-        {/* Responsible AI Notice */}
         {result && (
           <div className="mb-6">
             <AIDisclaimer />
           </div>
         )}
 
-        {/* Human Decision Controls */}
+        {/* Decision Controls */}
         {result && (
-          <Card className="mb-6">
-            <div className="flex items-center justify-between">
+          <PaperCard className="mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <CardTitle>Recruiter Decision</CardTitle>
-                <p className="text-sm text-gray-500 mt-1">Current: <StatusBadge status={result.recruiterDecision} /></p>
+                <SectionTitle>Recruiter Decision</SectionTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  <span style={{ fontSize: 16, color: "var(--paper-text-3)" }}>Current:</span>
+                  <PaperStatusBadge status={result.recruiterDecision} />
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={result.recruiterDecision === "shortlisted" ? "primary" : "outline"}
+              <div className="flex gap-2 flex-wrap">
+                <PaperButton
+                  variant={result.recruiterDecision === "shortlisted" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => handleDecision("shortlisted")}
                   disabled={decisionLoading}
                 >
                   <CheckCircle className="h-4 w-4" /> Shortlist
-                </Button>
-                <Button
-                  variant={result.recruiterDecision === "interview" ? "primary" : "outline"}
+                </PaperButton>
+                <PaperButton
+                  variant={result.recruiterDecision === "interview" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => handleDecision("interview")}
                   disabled={decisionLoading}
                 >
                   <Calendar className="h-4 w-4" /> Interview
-                </Button>
-                <Button
-                  variant={result.recruiterDecision === "rejected" ? "danger" : "outline"}
+                </PaperButton>
+                <PaperButton
+                  variant={result.recruiterDecision === "rejected" ? "danger" : "ghost"}
                   size="sm"
                   onClick={() => handleDecision("rejected")}
                   disabled={decisionLoading}
                 >
                   <XCircle className="h-4 w-4" /> Reject
-                </Button>
+                </PaperButton>
               </div>
             </div>
-          </Card>
+          </PaperCard>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* AI Analysis */}
           {result && (
             <div className="space-y-6">
-              <Card>
-                <CardTitle>Score Breakdown</CardTitle>
-                <SkillRadarChart breakdown={result.breakdown} />
+              <PaperCard>
+                <SectionTitle>Score Breakdown</SectionTitle>
+                <div className="flex justify-center">
+                  <RadarChart
+                    skills={result.breakdown.skillsMatch}
+                    experience={result.breakdown.experienceMatch}
+                    education={result.breakdown.educationMatch}
+                    culture={result.breakdown.cultureFitMatch}
+                    size={220}
+                  />
+                </div>
                 <div className="mt-3 space-y-3">
                   <ScoreBar score={result.breakdown.skillsMatch} label="Skills Match" />
                   <ScoreBar score={result.breakdown.experienceMatch} label="Experience" />
                   <ScoreBar score={result.breakdown.educationMatch} label="Education" />
                   <ScoreBar score={result.breakdown.cultureFitMatch} label="Culture Fit" />
-                  <div className="border-t pt-3 mt-3">
+                  <div style={{ borderTop: "1.5px solid var(--paper-border)", paddingTop: 12, marginTop: 12 }}>
                     <ScoreBar score={result.confidenceScore} label="AI Confidence" />
                   </div>
                 </div>
-              </Card>
+              </PaperCard>
 
-              <Card>
-                <CardTitle>AI Reasoning</CardTitle>
-                <p className="text-sm text-gray-600 mt-2 bg-blue-50 rounded-lg p-4">{result.reasoning}</p>
-              </Card>
+              <PaperCard>
+                <SectionTitle>AI Reasoning</SectionTitle>
+                <div
+                  style={{
+                    background: "var(--paper-accent-soft)",
+                    border: "1.5px solid var(--paper-border-acc)",
+                    borderRadius: 5,
+                    padding: 14,
+                  }}
+                >
+                  <p style={{ fontSize: 17, color: "var(--paper-text-2)", lineHeight: 1.6 }}>{result.reasoning}</p>
+                </div>
+              </PaperCard>
 
-              <Card>
-                <CardTitle>Strengths</CardTitle>
-                <div className="flex flex-wrap gap-2 mt-2">
+              <PaperCard>
+                <SectionTitle>Strengths</SectionTitle>
+                <div className="flex flex-wrap gap-2">
                   {result.strengths.map((s, i) => (
-                    <Badge key={i} variant="success">{s}</Badge>
+                    <PaperBadge key={i} variant="success">
+                      {s}
+                    </PaperBadge>
                   ))}
+                  {result.strengths.length === 0 && (
+                    <p style={{ fontSize: 16, color: "var(--paper-text-4)" }}>No strengths listed</p>
+                  )}
                 </div>
-              </Card>
+              </PaperCard>
 
-              <Card>
-                <CardTitle>Gaps</CardTitle>
-                <div className="flex flex-wrap gap-2 mt-2">
+              <PaperCard>
+                <SectionTitle>Gaps</SectionTitle>
+                <div className="flex flex-wrap gap-2">
                   {result.gaps.map((g, i) => (
-                    <Badge key={i} variant="warning">{g}</Badge>
+                    <PaperBadge key={i} variant="warning">
+                      {g}
+                    </PaperBadge>
                   ))}
+                  {result.gaps.length === 0 && (
+                    <p style={{ fontSize: 16, color: "var(--paper-text-4)" }}>No significant gaps</p>
+                  )}
                 </div>
-              </Card>
+              </PaperCard>
             </div>
           )}
 
           {/* Profile details */}
           <div className="space-y-6">
             {(p.bio || p.summary) && (
-              <Card>
-                <CardTitle>Summary</CardTitle>
-                <p className="text-sm text-gray-600 mt-2">{p.bio || p.summary}</p>
-              </Card>
+              <PaperCard>
+                <SectionTitle>Summary</SectionTitle>
+                <p style={{ fontSize: 17, color: "var(--paper-text-2)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                  {p.bio || p.summary}
+                </p>
+              </PaperCard>
             )}
 
-            <Card>
-              <CardTitle>Skills</CardTitle>
-              <div className="flex flex-wrap gap-2 mt-2">
+            <PaperCard>
+              <SectionTitle>Skills</SectionTitle>
+              <div className="flex flex-wrap gap-2">
                 {p.skills.map((s) => (
-                  <Badge key={s.name} variant="info">
+                  <PaperBadge key={s.name} variant="info">
                     {s.name} {s.level !== "intermediate" && `(${s.level})`}
-                  </Badge>
+                  </PaperBadge>
                 ))}
-                {p.skills.length === 0 && <p className="text-sm text-gray-400">No skills listed</p>}
+                {p.skills.length === 0 && (
+                  <p style={{ fontSize: 16, color: "var(--paper-text-4)" }}>No skills listed</p>
+                )}
               </div>
-            </Card>
+            </PaperCard>
 
-            <Card>
-              <CardTitle>Experience ({p.totalYearsExperience} years)</CardTitle>
-              <div className="mt-2 space-y-4">
+            <PaperCard>
+              <SectionTitle>Experience ({p.totalYearsExperience} years)</SectionTitle>
+              <div className="space-y-4">
                 {p.experience.map((exp, i) => (
-                  <div key={i} className="border-l-2 border-blue-200 pl-4">
-                    <p className="font-medium text-gray-900 text-sm">{exp.role || exp.title}</p>
-                    <p className="text-xs text-gray-500">{exp.company} &middot; {exp.startDate} - {exp.endDate || "Present"}</p>
-                    {exp.description && <p className="text-xs text-gray-600 mt-1">{exp.description}</p>}
+                  <div
+                    key={i}
+                    style={{
+                      borderLeft: "2px solid var(--paper-border-acc)",
+                      paddingLeft: 14,
+                    }}
+                  >
+                    <p style={{ fontSize: 17, fontWeight: 700, color: "var(--paper-text-1)" }}>
+                      {exp.role || exp.title}
+                    </p>
+                    <p style={{ fontSize: 17, color: "var(--paper-text-3)" }}>
+                      {exp.company} &middot; {exp.startDate} - {exp.endDate || "Present"}
+                    </p>
+                    {exp.description && (
+                      <p style={{ fontSize: 17, color: "var(--paper-text-2)", marginTop: 4, lineHeight: 1.5 }}>
+                        {exp.description}
+                      </p>
+                    )}
                   </div>
                 ))}
-                {p.experience.length === 0 && <p className="text-sm text-gray-400">No experience listed</p>}
+                {p.experience.length === 0 && (
+                  <p style={{ fontSize: 16, color: "var(--paper-text-4)" }}>No experience listed</p>
+                )}
               </div>
-            </Card>
+            </PaperCard>
 
-            <Card>
-              <CardTitle>Education</CardTitle>
-              <div className="mt-2 space-y-3">
+            <PaperCard>
+              <SectionTitle>Education</SectionTitle>
+              <div className="space-y-3">
                 {p.education.map((edu, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <Award className="h-4 w-4 text-gray-400 mt-0.5" />
+                    <Award className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: "var(--paper-text-3)" }} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{edu.degree}</p>
-                      <p className="text-xs text-gray-500">{edu.institution} {edu.graduationYear ? `(${edu.graduationYear})` : ""}</p>
+                      <p style={{ fontSize: 17, fontWeight: 700, color: "var(--paper-text-1)" }}>{edu.degree}</p>
+                      <p style={{ fontSize: 17, color: "var(--paper-text-3)" }}>
+                        {edu.institution} {edu.graduationYear ? `(${edu.graduationYear})` : ""}
+                      </p>
                     </div>
                   </div>
                 ))}
-                {p.education.length === 0 && <p className="text-sm text-gray-400">No education listed</p>}
+                {p.education.length === 0 && (
+                  <p style={{ fontSize: 16, color: "var(--paper-text-4)" }}>No education listed</p>
+                )}
               </div>
-            </Card>
+            </PaperCard>
           </div>
         </div>
       </div>
