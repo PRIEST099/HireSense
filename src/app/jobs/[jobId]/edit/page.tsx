@@ -354,30 +354,35 @@ export default function EditJobPage() {
                   { label: "Education", value: weightEducation, setter: setWeightEducation },
                   { label: "Culture Fit", value: weightCulture, setter: setWeightCulture },
                 ].map((w) => (
-                  <div key={w.label} className="flex items-center gap-4">
-                    <span style={{ fontSize: 17, color: "var(--paper-text-3)", width: 110, flexShrink: 0 }}>
+                  <div key={w.label} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                    <span
+                      className="sm:w-[110px]"
+                      style={{ fontSize: 17, color: "var(--paper-text-3)", flexShrink: 0 }}
+                    >
                       {w.label}
                     </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={w.value}
-                      onChange={(e) => w.setter(Number(e.target.value))}
-                      className="flex-1"
-                    />
-                    <span
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: "var(--paper-text-1)",
-                        width: 44,
-                        textAlign: "right",
-                        fontFamily: "var(--font-caveat), 'Caveat', cursive",
-                      }}
-                    >
-                      {w.value}%
-                    </span>
+                    <div className="flex items-center gap-3 w-full">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={w.value}
+                        onChange={(e) => w.setter(Number(e.target.value))}
+                        className="flex-1"
+                      />
+                      <span
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: "var(--paper-text-1)",
+                          width: 44,
+                          textAlign: "right",
+                          fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                        }}
+                      >
+                        {w.value}%
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -285,13 +285,15 @@ export default function CandidateDetailPage() {
               <PaperCard>
                 <SectionTitle>Score Breakdown</SectionTitle>
                 <div className="flex justify-center">
-                  <RadarChart
-                    skills={result.breakdown.skillsMatch}
-                    experience={result.breakdown.experienceMatch}
-                    education={result.breakdown.educationMatch}
-                    culture={result.breakdown.cultureFitMatch}
-                    size={220}
-                  />
+                  <div className="w-full max-w-[180px] sm:max-w-[220px]">
+                    <RadarChart
+                      skills={result.breakdown.skillsMatch}
+                      experience={result.breakdown.experienceMatch}
+                      education={result.breakdown.educationMatch}
+                      culture={result.breakdown.cultureFitMatch}
+                      size={220}
+                    />
+                  </div>
                 </div>
                 <div className="mt-3 space-y-3">
                   <ScoreBar score={result.breakdown.skillsMatch} label="Skills Match" />

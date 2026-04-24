@@ -237,7 +237,7 @@ export default function JobDetailPage() {
               <p style={{ fontSize: 17, color: "var(--paper-text-4)", marginTop: -8, marginBottom: 14 }}>
                 Click a category to view those candidates
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { key: "shortlisted", label: "Shortlisted", count: job.decisions.shortlisted, icon: CheckCircle },
                   { key: "interview", label: "Interview", count: job.decisions.interview, icon: Calendar },
@@ -391,7 +391,7 @@ export default function JobDetailPage() {
 
         <PaperCard>
           <SectionTitle>Screening Configuration</SectionTitle>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
             {[
               { label: "Skills", value: job.screeningConfig.weightSkills },
               { label: "Experience", value: job.screeningConfig.weightExperience },

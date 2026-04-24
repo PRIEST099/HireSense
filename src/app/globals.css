@@ -147,9 +147,18 @@ h1, h2, h3, h4, h5, h6 {
   height: 1.8px !important;
 }
 
-/* Single-side sketchy dividers (sidebar/navbar) with 2 strokes */
+/* Single-side sketchy dividers (sidebar/navbar) with 2 strokes.
+   For divider-right (the sidebar) we only set `position: relative` on
+   ≥lg — on mobile the sidebar uses Tailwind `fixed` and we must NOT
+   override that, or the off-screen translate-x breaks and the sidebar
+   bleeds into the content area.
+   divider-bottom (the navbar) is never fixed, so it can always be
+   relative. */
+@media (min-width: 1024px) {
+  .paper-sketch-divider-right { position: relative; }
+}
 .paper-sketch-divider-right {
-  position: relative;
+  /* no-op — see media query above */
 }
 .paper-sketch-divider-right::before,
 .paper-sketch-divider-right::after {
@@ -774,10 +783,12 @@ html.classic-mode body {
   letter-spacing: 0;
 }
 
-/* Landing page in classic mode: force the system font on every descendant
-   so the stubborn inline Caveat fontFamily styles get overridden. */
-html.classic-mode .landing-page,
-html.classic-mode .landing-page * {
+/* Classic mode: force the system font everywhere (all pages, all elements)
+   so any inline Caveat fontFamily from paper components (brand chip,
+   funnel scene, stat numbers, buttons, badges) gets consistently replaced
+   with the regular platform font. */
+html.classic-mode,
+html.classic-mode * {
   font-family: ui-sans-serif, system-ui, sans-serif !important;
 }
 
