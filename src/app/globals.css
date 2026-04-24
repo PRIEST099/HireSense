@@ -1,61 +1,249 @@
 @import "tailwindcss";
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── TAILWIND v4 THEME TOKENS ──────────────────────────────────────────── */
+@theme {
+  --font-sans: var(--font-caveat), 'Caveat', cursive;
+  --font-caveat: var(--font-caveat), 'Caveat', cursive;
+
+  --color-paper-bg: #F7F8FD;
+  --color-paper-card: #FFFFFF;
+  --color-paper-border: rgba(80, 110, 200, 0.18);
+  --color-paper-border-acc: rgba(80, 110, 200, 0.45);
+  --color-paper-text-1: #171826;
+  --color-paper-text-2: #3A3D56;
+  --color-paper-text-3: #6B6F8A;
+  --color-paper-text-4: #9EA2BB;
+  --color-paper-accent: #4F46E5;
+  --color-paper-accent-soft: rgba(79, 70, 229, 0.1);
+  --color-paper-green: #0D9488;
+  --color-paper-green-soft: rgba(13, 148, 136, 0.1);
+  --color-paper-amber: #B45309;
+  --color-paper-amber-soft: rgba(180, 83, 9, 0.1);
+  --color-paper-red: #B91C1C;
+  --color-paper-red-soft: rgba(185, 28, 28, 0.1);
+
+  --shadow-paper: 1px 2px 0 rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-paper-card: 2px 3px 0 rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-hard: 2px 3px 0 #171826;
+  --shadow-hard-sm: 1px 2px 0 #171826;
 }
 
-/* Grain/noise texture overlay — strong wall texture, fixed position */
-.bg-grain {
+/* ─── PAPER THEME CSS VARIABLES (used directly in inline styles) ────────── */
+@layer base {
+  :root {
+    --paper-bg: #F7F8FD;
+    --paper-card: #FFFFFF;
+    --paper-border: rgba(80, 110, 200, 0.18);
+    --paper-border-acc: rgba(80, 110, 200, 0.45);
+    --paper-input-bg: rgba(80, 110, 200, 0.04);
+    --paper-input-border: rgba(80, 110, 200, 0.22);
+    --paper-text-1: #000000;
+    --paper-text-2: #0E0F1D;
+    --paper-text-3: #2A2D44;
+    --paper-text-4: #484C6A;
+    --paper-radar-grid: rgba(80, 110, 200, 0.14);
+    --paper-shadow: 1px 2px 0 rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+    --paper-shadow-card: 2px 3px 0 rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
+    --paper-shadow-hard: 2px 3px 0 #171826;
+    --paper-accent: #4F46E5;
+    --paper-accent-soft: rgba(79, 70, 229, 0.1);
+    --paper-green: #0D9488;
+    --paper-green-soft: rgba(13, 148, 136, 0.1);
+    --paper-amber: #B45309;
+    --paper-amber-soft: rgba(180, 83, 9, 0.1);
+    --paper-red: #B91C1C;
+    --paper-red-soft: rgba(185, 28, 28, 0.1);
+    --paper-grid-color: rgba(90, 120, 210, 0.2);
+    --paper-grid-size: 16px;
+    /* Dark ink for pen-sketched borders — clearly visible on cream paper */
+    --paper-ink: rgba(23, 24, 38, 0.85);
+    --paper-ink-acc: rgba(79, 70, 229, 0.9);
+  }
+
+  body {
+    font-family: var(--font-caveat), 'Caveat', cursive;
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--paper-text-1);
+    letter-spacing: 0.003em;
+  }
+}
+
+/* Caveat is a handwritten cursive — all UI text needs 600+ to read clearly */
+p, span, label, li, td, th, div, a, button, input, textarea, select {
+  font-weight: 600;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+}
+
+
+/* ─── UTILITY CLASSES ───────────────────────────────────────────────────── */
+.paper-bg {
+  background-color: var(--paper-bg);
+}
+
+/* Hand-drawn-looking paper grid — TWO layers:
+   1) a sparse "flaw" tile (192×192) with breaks, fades, and dashed ink marks
+   2) the baseline wavy grid tile (64×64)
+   Two different periods means imperfections never repeat in lock-step. */
+.paper-grid {
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'><defs><filter id='f' x='-8%25' y='-8%25' width='116%25' height='116%25'><feTurbulence type='fractalNoise' baseFrequency='0.11' numOctaves='2' seed='31'/><feDisplacementMap in='SourceGraphic' scale='3.2'/></filter></defs><g fill='none' filter='url(%23f)'><path d='M0 32 H78 M96 32 H192' stroke='rgba(90,120,210,0.3)' stroke-width='1'/><path d='M0 112 H192' stroke='rgba(90,120,210,0.18)' stroke-width='0.9' stroke-dasharray='9 3 28 4 55 2'/><path d='M14 176 H192' stroke='rgba(90,120,210,0.28)' stroke-width='1'/><path d='M48 0 V118 M48 138 V192' stroke='rgba(90,120,210,0.3)' stroke-width='1'/><path d='M144 0 V192' stroke='rgba(90,120,210,0.18)' stroke-width='0.9' stroke-dasharray='22 3 60 5 40 2'/></g></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><defs><filter id='r' x='-10%25' y='-10%25' width='120%25' height='120%25'><feTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='2' seed='5'/><feDisplacementMap in='SourceGraphic' scale='1.4'/></filter></defs><g stroke='rgba(90,120,210,0.24)' stroke-width='1' fill='none' filter='url(%23r)'><path d='M0 0 H64 M0 16 H64 M0 32 H64 M0 48 H64'/><path d='M0 0 V64 M16 0 V64 M32 0 V64 M48 0 V64'/></g></svg>");
+  background-size: 192px 192px, 64px 64px;
+  background-repeat: repeat, repeat;
+}
+
+.paper-panel-solid {
+  background-color: var(--paper-card);
+  background-image: none;
+}
+
+/* ─── SCRATCHED-PEN BORDERS (multi-pass pen strokes) ─────────────────────── */
+/* Three overlapping strokes with different filter seeds = pen traced 3× */
+.paper-sketch-border {
   position: relative;
-  background-color: #edeae5;
+  border: 1.5px solid transparent !important;
 }
-
-.bg-grain::before {
+.paper-sketch-border::before,
+.paper-sketch-border::after {
   content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  position: absolute;
+  border-radius: inherit;
   pointer-events: none;
-  z-index: 2;
-  opacity: 0.35;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  background-attachment: fixed;
+  border: 2px solid var(--sketch-color, var(--paper-ink));
+}
+.paper-sketch-border::before {
+  inset: -3px;
+  filter: url(#paper-sketch-a);
+  opacity: 0.85;
+}
+.paper-sketch-border::after {
+  inset: -1px;
+  filter: url(#paper-sketch-b);
+  opacity: 0.8;
+}
+/* Third stroke via an explicit child */
+.paper-sketch-border > .sketch-stroke-3 {
+  position: absolute;
+  inset: -2px;
+  border: 1.8px solid var(--sketch-color, var(--paper-ink));
+  border-radius: inherit;
+  pointer-events: none;
+  filter: url(#paper-sketch-c);
+  opacity: 0.75;
 }
 
-/* Coarser depth layer */
-.bg-grain::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.12;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise2'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.35' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise2)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 100px 100px;
-  background-attachment: fixed;
+/* Sidebar / navbar dividers — use dark ink too */
+.paper-sketch-divider-right::before,
+.paper-sketch-divider-right::after {
+  background: var(--paper-ink) !important;
+  width: 1.8px !important;
+}
+.paper-sketch-divider-bottom::before,
+.paper-sketch-divider-bottom::after {
+  background: var(--paper-ink) !important;
+  height: 1.8px !important;
 }
 
-.bg-grain > * {
+/* Single-side sketchy dividers (sidebar/navbar) with 2 strokes */
+.paper-sketch-divider-right {
   position: relative;
-  z-index: 3;
+}
+.paper-sketch-divider-right::before,
+.paper-sketch-divider-right::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 1.3px;
+  height: 100%;
+  background: var(--paper-border);
+  pointer-events: none;
+}
+.paper-sketch-divider-right::before {
+  filter: url(#paper-sketch-a);
+  transform: translateX(0.5px);
+  opacity: 0.9;
+}
+.paper-sketch-divider-right::after {
+  filter: url(#paper-sketch-b);
+  transform: translateX(-0.4px);
+  opacity: 0.7;
 }
 
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.paper-sketch-divider-bottom {
+  position: relative;
+}
+.paper-sketch-divider-bottom::before,
+.paper-sketch-divider-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1.3px;
+  background: var(--paper-border);
+  pointer-events: none;
+}
+.paper-sketch-divider-bottom::before {
+  filter: url(#paper-sketch-a);
+  transform: translateY(0.5px);
+  opacity: 0.9;
+}
+.paper-sketch-divider-bottom::after {
+  filter: url(#paper-sketch-b);
+  transform: translateY(-0.4px);
+  opacity: 0.7;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+/* ─── SCROLLBARS ────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--paper-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--paper-border-acc); }
+
+/* ─── INPUTS ────────────────────────────────────────────────────────────── */
+input, textarea, select {
+  font-family: var(--font-caveat), 'Caveat', cursive;
+  font-size: 17px;
+  color: var(--paper-text-1);
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--paper-border);
+  outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--paper-accent);
+  cursor: pointer;
+  border: 2px solid var(--paper-card);
+  box-shadow: 0 0 0 2px var(--paper-accent);
+}
+
+button {
+  font-family: var(--font-caveat), 'Caveat', cursive;
+}
+
+/* ─── ANIMATIONS ────────────────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s infinite;
 }
 
 @keyframes fade-in-up {
@@ -63,32 +251,636 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
 }
 
 @keyframes score-fill {
   from { width: 0%; }
 }
 
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease infinite;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
 .animate-score-fill {
   animation: score-fill 1.5s ease-out forwards;
 }
 
-.animation-delay-200 { animation-delay: 0.2s; }
-.animation-delay-400 { animation-delay: 0.4s; }
-.animation-delay-600 { animation-delay: 0.6s; }
+/* ─── WHITEBOARD ANIMATIONS ─────────────────────────────────────────────── */
+/* Base entrance — elements "draw in" with slight upward motion */
+@keyframes whiteboard-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Pen stroke tracing: each of the 3 sketch pseudo-elements appears in sequence */
+@keyframes whiteboard-trace-stroke {
+  0%   { opacity: 0; transform: translateY(-2px) skewX(1deg); }
+  60%  { opacity: 0.9; }
+  100% { opacity: var(--stroke-final-opacity, 0.85); transform: translateY(0) skewX(0); }
+}
+
+/* Headline write-in: left-to-right reveal via inset clip-path */
+@keyframes whiteboard-write-in {
+  from { clip-path: inset(0 100% 0 0); opacity: 0; }
+  to   { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+/* ScoreRing — circumference traces from 0 to target */
+@keyframes whiteboard-draw-ring {
+  from { stroke-dashoffset: var(--ring-start, 1000); }
+  to   { stroke-dashoffset: var(--ring-end, 0); }
+}
+
+/* Radar polygon — trace along the perimeter */
+@keyframes whiteboard-draw-polygon {
+  from { stroke-dashoffset: var(--poly-start, 1000); fill-opacity: 0; }
+  to   { stroke-dashoffset: 0; fill-opacity: var(--poly-fill-opacity, 1); }
+}
+
+/* Soft hover wiggle for interactive cards/icons */
+@keyframes whiteboard-wiggle {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-0.5deg); }
+  50%  { transform: rotate(0.5deg); }
+  75%  { transform: rotate(-0.25deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Ink-splash on primary button press */
+@keyframes whiteboard-ink-press {
+  0%   { opacity: 0.4; transform: scale(0.2); }
+  80%  { opacity: 0.2; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* Status badges appear with a tiny scribble bounce */
+@keyframes whiteboard-scribble-in {
+  0%   { opacity: 0; transform: scale(0.6) rotate(-3deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(1.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* Modals/toasts tilt in */
+@keyframes whiteboard-tilt-in {
+  from { opacity: 0; transform: translateY(-14px) rotate(-0.8deg); }
+  to   { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+
+/* Continuous "pen drawing a circle" spinner */
+@keyframes whiteboard-pen-spin {
+  0%   { stroke-dashoffset: 170; transform: rotate(0deg); }
+  50%  { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: 170; transform: rotate(360deg); }
+}
+
+/* Sidebar active-item scribble underline reveal */
+@keyframes whiteboard-underline-scribble {
+  from { stroke-dashoffset: var(--underline-length, 120); }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ─── WHITEBOARD UTILITY CLASSES ────────────────────────────────────────── */
+
+/* Base fade-in entrance — applied by default to PaperCard */
+.wb-fade-in {
+  animation: whiteboard-fade-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--wb-delay, 0ms);
+}
+
+/* Stagger: each direct child gets +75ms delay based on --i (inline style) */
+.wb-stagger > * {
+  animation-delay: calc(var(--i, 0) * 75ms);
+}
+
+/* Trace-border: drives the three sketch strokes to appear in sequence */
+.wb-trace-border::before {
+  animation: whiteboard-trace-stroke 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--wb-delay, 0ms) + 80ms);
+  --stroke-final-opacity: 0.85;
+}
+.wb-trace-border::after {
+  animation: whiteboard-trace-stroke 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--wb-delay, 0ms) + 200ms);
+  --stroke-final-opacity: 0.8;
+}
+.wb-trace-border > .sketch-stroke-3 {
+  animation: whiteboard-trace-stroke 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--wb-delay, 0ms) + 320ms);
+  --stroke-final-opacity: 0.75;
+}
+
+/* Headline write-in */
+.wb-write-in {
+  animation: whiteboard-write-in 900ms cubic-bezier(0.6, 0.05, 0.2, 1) both;
+  animation-delay: var(--wb-delay, 0ms);
+}
+
+/* Hover wiggle on interactive elements (only runs on hover) */
+.wb-wiggle:hover {
+  animation: whiteboard-wiggle 400ms ease-in-out;
+}
+
+/* Button press — ink splash via pseudo-element */
+.wb-press {
+  position: relative;
+  overflow: hidden;
+}
+.wb-press::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.45) 0%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.2);
+  transform-origin: center;
+}
+.wb-press:active::after {
+  animation: whiteboard-ink-press 420ms ease-out;
+}
+
+/* Badge scribble-in */
+.wb-scribble-in {
+  animation: whiteboard-scribble-in 520ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  animation-delay: var(--wb-delay, 0ms);
+}
+
+/* Modal / toast tilt-in */
+.wb-tilt-in {
+  animation: whiteboard-tilt-in 400ms cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* Ring draw (applied to the foreground circle in ScoreRing) */
+.wb-draw-ring {
+  animation: whiteboard-draw-ring 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--wb-delay, 200ms);
+}
+
+/* Polygon draw (RadarChart) */
+.wb-draw-polygon {
+  animation: whiteboard-draw-polygon 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--wb-delay, 400ms);
+}
+
+/* Sidebar active underline draw */
+.wb-draw-underline {
+  animation: whiteboard-underline-scribble 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Radar stagger helpers */
+.wb-radar-grid  { animation: whiteboard-fade-in 350ms ease-out both; animation-delay: 0ms; }
+.wb-radar-spoke { animation: whiteboard-fade-in 350ms ease-out both; animation-delay: 200ms; }
+.wb-radar-label { animation: whiteboard-fade-in 400ms ease-out both; animation-delay: 1300ms; }
+
+/* Pen-drawing spinner (can replace Loader2 where desired) */
+.wb-pen-spinner {
+  animation: whiteboard-pen-spin 1.3s linear infinite;
+  transform-origin: center;
+}
+
+/* ─── FUNNEL SCENE ANIMATIONS ───────────────────────────────────────────── */
+/* Candidates (and their skill tags) drift, then get sucked into the funnel
+   and vanish, then quietly reset back to their scatter position. Staggered
+   delays mean ~1–2 silhouettes are in transit at any given time. */
+@keyframes funnel-candidate-enter {
+  /* idle drift for the first ~half of the loop */
+  0%, 30% {
+    transform: translate(0, 0) rotate(var(--fp-rot, 0deg)) scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(0, -4px) rotate(calc(var(--fp-rot, 0deg) + 1deg)) scale(1);
+    opacity: 1;
+  }
+  /* accelerate toward funnel mouth */
+  65% {
+    transform:
+      translate(calc(var(--fp-dx, 0px) * 0.65), calc(var(--fp-dy, 0px) * 0.65))
+      rotate(var(--fp-rot, 0deg))
+      scale(0.7);
+    opacity: 0.95;
+  }
+  /* inside the funnel, shrinking */
+  78% {
+    transform:
+      translate(var(--fp-dx, 0px), var(--fp-dy, 0px))
+      rotate(var(--fp-rot, 0deg))
+      scale(0.25);
+    opacity: 0;
+  }
+  /* gone (held invisible while other candidates take the spotlight) */
+  78.01%, 90% {
+    transform: translate(0, 0) rotate(var(--fp-rot, 0deg)) scale(0);
+    opacity: 0;
+  }
+  /* fade back in at origin, ready for next cycle */
+  100% {
+    transform: translate(0, 0) rotate(var(--fp-rot, 0deg)) scale(1);
+    opacity: 1;
+  }
+}
+.funnel-input-pill {
+  animation: funnel-candidate-enter 7s ease-in-out infinite;
+  animation-delay: var(--fp-delay, 0ms);
+}
+
+/* Scan line sweeps from the top of the funnel down to where it narrows */
+@keyframes funnel-scan {
+  0%   { transform: translateY(12px);  opacity: 0; }
+  15%  { opacity: 0.85; }
+  85%  { opacity: 0.85; }
+  100% { transform: translateY(160px); opacity: 0; }
+}
+.funnel-scan-line {
+  animation: funnel-scan 2.6s cubic-bezier(0.5, 0.2, 0.4, 1) infinite;
+}
+
+/* Labels pulse faintly to suggest real-time AI scoring */
+@keyframes funnel-label-pulse {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 0.55; }
+}
+.funnel-label-1 { animation: funnel-label-pulse 2.4s ease-in-out infinite; }
+.funnel-label-2 { animation: funnel-label-pulse 2.4s ease-in-out 800ms infinite; }
+.funnel-label-3 { animation: funnel-label-pulse 2.4s ease-in-out 1600ms infinite; }
+
+/* Output cards emerge from the funnel mouth — start bunched at the center
+   (and a bit above their resting position) then slide + scale into place. */
+@keyframes funnel-card-emerge {
+  0% {
+    transform: translate(var(--oc-dx, 0px), -60px) scale(0.18);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.7;
+  }
+  72% {
+    transform: translate(0, 0) scale(1.09);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+.funnel-output-card {
+  animation: funnel-card-emerge 1.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  animation-delay: var(--oc-delay, 0ms);
+}
+
+/* AI badge — soft outer ring pulse */
+@keyframes funnel-ai-pulse {
+  0%, 100% { stroke-opacity: 0.15; transform: scale(1); }
+  50%      { stroke-opacity: 0.55; transform: scale(1.12); }
+}
+.funnel-ai-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: funnel-ai-pulse 2.4s ease-in-out infinite;
+}
+
+/* Stray particles near the top twinkle */
+@keyframes funnel-speck-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 0.9; transform: scale(1.3); }
+}
+.funnel-particle-stray {
+  animation: funnel-speck-twinkle 2s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* Branch thinking dots — ONE dot at a time, in random order around the
+   chip. Each dot owns a 1.75s slot of a 14s cycle (8 slots × 1.75s).
+   During its slot the dot travels from its terminal into the chip
+   core along the trace path (including the L-kink on diagonals).
+   Outside its slot it is invisible and parked at the destination. */
+@keyframes funnel-branch-dot-flow {
+  /* Slot window: 0% → 12.5% of the 14s cycle = the 1.75s travel time. */
+  0%    { offset-distance: 0%;   opacity: 0; }
+  1%    { offset-distance: 0%;   opacity: 1; }
+  12%   { offset-distance: 100%; opacity: 1; }
+  13%   { offset-distance: 100%; opacity: 0; }
+  100%  { offset-distance: 100%; opacity: 0; }
+}
+.funnel-branch-dot {
+  animation: funnel-branch-dot-flow 14s linear infinite;
+}
+.funnel-branch-dot::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--paper-accent);
+  box-shadow: 0 0 4px var(--paper-accent), 0 0 8px rgba(79, 70, 229, 0.4);
+}
+/* Branch dots always animate — they only exist on the landing page, and
+   the user wants landing animations to play in classic mode too. */
+
+/* Downlink dashed lines from AI chip bottom to each of the 3 output cards */
+@keyframes funnel-downlink-shimmer {
+  0%   { stroke-dashoffset: 0;   opacity: 0.55; }
+  50%  { stroke-dashoffset: -24; opacity: 0.95; }
+  100% { stroke-dashoffset: -48; opacity: 0.55; }
+}
+.funnel-ai-downlinks path {
+  animation: funnel-downlink-shimmer 2.4s linear infinite;
+}
+
+/* Descending silhouettes — emerge at the AI chip bottom, travel along
+   their CSS offset-path (the dashed downlink) to their target card,
+   then fade. Plays ONCE on mount. The offset-path is set inline per
+   descender. `offset-distance` handles the position along the curve;
+   `transform` is used only for the scale pop at start/end. */
+@keyframes funnel-silhouette-descend {
+  0%   { offset-distance: 0%;   transform: scale(0.15); opacity: 0; }
+  15%  { offset-distance: 2%;   transform: scale(1);    opacity: 1; }
+  82%  { offset-distance: 100%; transform: scale(1);    opacity: 1; }
+  100% { offset-distance: 100%; transform: scale(0.4);  opacity: 0; }
+}
+.funnel-descending-silhouette {
+  animation: funnel-silhouette-descend 1.6s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+/* Output-card content (silhouette + stars + score) starts empty and fades in
+   when the descending silhouette arrives at the card. Plays ONCE. */
+@keyframes funnel-card-fill-in {
+  0%   { opacity: 0; transform: scale(0.7); }
+  70%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.funnel-card-content {
+  opacity: 0;
+  animation: funnel-card-fill-in 0.5s cubic-bezier(0.34, 1.3, 0.64, 1) forwards;
+  animation-delay: var(--fill-delay, 2200ms);
+}
+
+/* Card silhouette flash — phase-locked to the data-pulse cycle (3.2s),
+   with animation-delay matching the pulse's delay so the flash peak
+   coincides with the pulse arriving at the card (pulse = 50% of cycle).
+   The silhouette scales up briefly and gets a blue glow, signalling
+   "new AI response just landed — candidate ready to review". */
+@keyframes funnel-card-silhouette-flash {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79,70,229,0)); }
+  45% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79,70,229,0)); }
+  50% { transform: scale(1.22); filter: drop-shadow(0 0 12px rgba(79,70,229,0.85)); }
+  55% { transform: scale(1.1); filter: drop-shadow(0 0 6px rgba(79,70,229,0.6)); }
+  60% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79,70,229,0)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(79,70,229,0)); }
+}
+.funnel-card-silhouette-flash {
+  display: inline-flex;
+  animation: funnel-card-silhouette-flash 3.2s ease-out infinite;
+}
+
+/* Flash always runs (landing only) — keep animation even in classic mode. */
+
+/* Screening-response pulses — small glowing green dots flow from the AI
+   chip bottom, along the flowchart downlink, into each card. One pulse
+   per card per cycle (3 responses per screening, staggered). A clear
+   pause between batches so "3 responses" reads distinctly, not as a
+   continuous stream. Their container is a 1×1 point that moves along
+   the offset-path; ::before renders the visible glowing bead. */
+@keyframes funnel-data-pulse-flow {
+  /* ~55% of cycle is the travel; remaining 45% is the inter-batch pause
+     with the pulse hidden off-start. */
+  0%   { offset-distance: 0%;   opacity: 0; }
+  6%   { opacity: 1; }
+  50%  { offset-distance: 100%; opacity: 1; }
+  55%  { offset-distance: 100%; opacity: 0; }
+  100% { offset-distance: 0%;   opacity: 0; }
+}
+.funnel-data-pulse {
+  animation: funnel-data-pulse-flow 3.2s ease-in-out infinite;
+}
+.funnel-data-pulse::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--paper-accent);
+  box-shadow: 0 0 6px var(--paper-accent), 0 0 12px rgba(79, 70, 229, 0.5);
+}
+/* Data pulses always animate — landing scene only, stays active in classic. */
+
+/* Rejected silhouettes fade a bit faster inside the funnel (red dissolve) */
+.funnel-input-pill[data-status="rejected"] {
+  animation-duration: 5.5s;
+}
+
+/* All funnel animations are allowed to run in classic mode too —
+   the funnel only exists on the landing page and the user wants the
+   landing page to stay animated in both design modes. */
+
+/* ─── HAND-DRAWN ICONS ──────────────────────────────────────────────────── */
+/* Apply a subtle pen wobble to every lucide icon so they feel sketched.
+   Excluded: elements opting out with .no-sketch, and classic mode. */
+html:not(.classic-mode) svg.lucide:not(.no-sketch) {
+  filter: url(#paper-sketch-icon);
+}
+
+/* Exclude animated SVG icons like Loader2 where the filter would double up
+   with the spin transform and look messy. */
+html:not(.classic-mode) svg.lucide.animate-spin {
+  filter: none;
+}
+
+/* ─── TORN-PAPER BACKGROUNDS (stitched / scrapbook look) ────────────────── */
+/* The filled background moves onto a pseudo-element so it can be wobbled
+   independently of the text and icon content above it. Text stays crisp
+   while the colored "paper" behind it looks ragged on the edges. */
+.torn-bg-subtle,
+.torn-bg-dramatic {
+  position: relative;
+  isolation: isolate;
+  /* Buttons etc. set their bg via inline styles — neutralize that */
+  background: transparent !important;
+}
+
+.torn-bg-subtle::before,
+.torn-bg-dramatic::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: var(--torn-color, var(--paper-accent));
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.torn-bg-subtle::before {
+  filter: url(#torn-subtle);
+}
+.torn-bg-dramatic::before {
+  filter: url(#torn-dramatic);
+  inset: -3px;
+}
+
+/* In classic mode, neutralize the torn effect — just use the inline bg color */
+html.classic-mode .torn-bg-subtle,
+html.classic-mode .torn-bg-dramatic {
+  background: var(--torn-color, var(--paper-accent)) !important;
+  isolation: auto;
+}
+html.classic-mode .torn-bg-subtle::before,
+html.classic-mode .torn-bg-dramatic::before {
+  display: none !important;
+}
+/* Classic mode: restore crisp icon rendering */
+html.classic-mode svg.lucide {
+  filter: none !important;
+}
+
+/* ─── CLASSIC-MODE FALLBACK ─────────────────────────────────────────────── */
+/* When html.classic-mode is set, every paper effect is neutralized via
+   CSS variable overrides + pseudo-element suppression. No component code
+   changes are needed — the paper aesthetic is entirely CSS-variable driven. */
+html.classic-mode {
+  --paper-bg: #F9FAFB;
+  --paper-card: #FFFFFF;
+  --paper-border: rgb(229, 231, 235);
+  --paper-border-acc: rgb(59, 130, 246);
+  --paper-input-bg: #FFFFFF;
+  --paper-input-border: rgb(209, 213, 219);
+  --paper-text-1: rgb(17, 24, 39);
+  --paper-text-2: rgb(55, 65, 81);
+  --paper-text-3: rgb(107, 114, 128);
+  --paper-text-4: rgb(156, 163, 175);
+  --paper-radar-grid: rgb(229, 231, 235);
+  --paper-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --paper-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --paper-shadow-hard: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --paper-accent: rgb(37, 99, 235);
+  --paper-accent-soft: rgb(239, 246, 255);
+  --paper-green: rgb(22, 163, 74);
+  --paper-green-soft: rgb(240, 253, 244);
+  --paper-amber: rgb(202, 138, 4);
+  --paper-amber-soft: rgb(254, 252, 232);
+  --paper-red: rgb(220, 38, 38);
+  --paper-red-soft: rgb(254, 242, 242);
+  --paper-grid-color: transparent;
+  --paper-ink: transparent;
+  --paper-ink-acc: rgb(59, 130, 246);
+}
+
+html.classic-mode body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Landing page in classic mode: force the system font on every descendant
+   so the stubborn inline Caveat fontFamily styles get overridden. */
+html.classic-mode .landing-page,
+html.classic-mode .landing-page * {
+  font-family: ui-sans-serif, system-ui, sans-serif !important;
+}
+
+html.classic-mode p,
+html.classic-mode span,
+html.classic-mode label,
+html.classic-mode li,
+html.classic-mode td,
+html.classic-mode th,
+html.classic-mode div,
+html.classic-mode a,
+html.classic-mode button,
+html.classic-mode input,
+html.classic-mode textarea,
+html.classic-mode select {
+  font-weight: 400;
+  font-family: inherit;
+}
+
+html.classic-mode h1,
+html.classic-mode h2,
+html.classic-mode h3,
+html.classic-mode h4 {
+  font-weight: 600;
+  font-family: inherit;
+}
+
+/* Kill the paper grid background */
+html.classic-mode .paper-grid {
+  background-image: none !important;
+}
+
+/* Suppress sketch-border pseudo-elements (the 3 pen strokes) */
+html.classic-mode .paper-sketch-border::before,
+html.classic-mode .paper-sketch-border::after,
+html.classic-mode .paper-sketch-border > .sketch-stroke-3,
+html.classic-mode .paper-sketch-divider-right::before,
+html.classic-mode .paper-sketch-divider-right::after,
+html.classic-mode .paper-sketch-divider-bottom::before,
+html.classic-mode .paper-sketch-divider-bottom::after {
+  display: none !important;
+  animation: none !important;
+}
+
+/* Clean borders on sketch containers */
+html.classic-mode .paper-sketch-border {
+  background: var(--paper-card) !important;
+  border: 1px solid var(--paper-border) !important;
+  border-radius: 8px !important;
+}
+
+html.classic-mode .paper-sketch-divider-right {
+  border-right: 1px solid var(--paper-border);
+}
+html.classic-mode .paper-sketch-divider-bottom {
+  border-bottom: 1px solid var(--paper-border);
+}
+
+/* Solid white sidebar / navbar */
+html.classic-mode aside,
+html.classic-mode header {
+  background: #FFFFFF !important;
+}
+
+/* Disable whiteboard animations in classic mode, EXCEPT on the landing
+   page — the user wants the landing page to stay animated in both
+   design modes. `:has(.landing-page)` on html matches only when the
+   landing page is currently rendered, so these rules skip it. */
+html.classic-mode:not(:has(.landing-page)) [class*="wb-"] {
+  animation: none !important;
+}
+html.classic-mode:not(:has(.landing-page)) .wb-stagger > * {
+  animation-delay: 0 !important;
+}
+html.classic-mode:not(:has(.landing-page)) .wb-draw-ring {
+  /* Keep the final visual state instead of animating */
+  stroke-dashoffset: var(--ring-end, 0) !important;
+}
+html.classic-mode:not(:has(.landing-page)) .wb-draw-polygon {
+  stroke-dashoffset: 0 !important;
+  fill-opacity: var(--poly-fill-opacity, 1) !important;
+}
+html.classic-mode:not(:has(.landing-page)) .wb-draw-underline {
+  stroke-dashoffset: 0 !important;
+}
+
+/* Reset input fonts/sizes */
+html.classic-mode input,
+html.classic-mode textarea,
+html.classic-mode select {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* Reset button font */
+html.classic-mode button {
+  font-family: inherit;
+}
+
+/* The design-mode toggle itself must never be paper-styled — it uses
+   inline styles, so this is just defensive: ensure no stray rules apply. */
+html.classic-mode button[aria-label*="Switch to"],
+button[aria-label*="Switch to"] {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 500 !important;
+}

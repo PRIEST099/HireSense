@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardTitle } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/Badge";
-import { Badge } from "@/components/ui/Badge";
+import { PaperCard } from "@/components/paper/PaperCard";
+import { PaperButton } from "@/components/paper/PaperButton";
+import { PaperBadge, PaperStatusBadge } from "@/components/paper/PaperBadge";
+import { ScoreRing } from "@/components/paper/ScoreRing";
+import { RadarChart } from "@/components/paper/RadarChart";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ProgressBar, ScoreBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -16,10 +17,10 @@ import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import { ScoreDistributionChart } from "@/components/screening/ScoreDistributionChart";
 import {
   Brain,
+  Columns3,
   Play,
   Download,
   ChevronDown,
-  ChevronUp,
   Trophy,
   Sparkles,
   CheckCircle,
@@ -30,7 +31,6 @@ import {
   ArrowRight,
   Filter,
   SortDesc,
-  Briefcase,
   MapPin,
   Star,
   MessageSquare,
@@ -71,12 +71,48 @@ interface JobData {
   company: string;
   location: string;
   requirements: { skills: string[]; experience: { min: number; max: number }; education: string };
-  screeningConfig: { shortlistSize: number; weightSkills: number; weightExperience: number; weightEducation: number; weightCultureFit: number };
+  screeningConfig: {
+    shortlistSize: number;
+    weightSkills: number;
+    weightExperience: number;
+    weightEducation: number;
+    weightCultureFit: number;
+  };
 }
 
 type SortField = "rank" | "score" | "skills" | "experience";
 type FilterMatch = "all" | "strong_match" | "good_match" | "partial_match" | "weak_match";
 type FilterDecision = "all" | "shortlisted" | "interview" | "rejected" | "pending";
+
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontSize: 17,
+        padding: "5px 12px",
+        borderRadius: 4,
+        fontWeight: active ? 700 : 500,
+        background: active ? "var(--paper-accent)" : "var(--paper-card)",
+        color: active ? "#fff" : "var(--paper-text-2)",
+        border: active ? "2px solid var(--paper-text-1)" : "1.5px solid var(--paper-border)",
+        boxShadow: active ? "1px 2px 0 var(--paper-text-1)" : "var(--paper-shadow)",
+        cursor: "pointer",
+        fontFamily: "var(--font-caveat), 'Caveat', cursive",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function ResultsPage() {
   useSession({ required: true });
@@ -94,7 +130,6 @@ export default function ResultsPage() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [decisionLoading, setDecisionLoading] = useState<string | null>(null);
 
-  // Filters
   const [minScore, setMinScore] = useState(0);
   const [matchFilter, setMatchFilter] = useState<FilterMatch>("all");
   const [decisionFilter, setDecisionFilter] = useState<FilterDecision>(() => {
@@ -109,22 +144,28 @@ export default function ResultsPage() {
   const [showCompare, setShowCompare] = useState(false);
 
   const loadResults = useCallback(async () => {
-    const [resultsRes, jobRes] = await Promise.all([
-      fetch(`/api/jobs/${jobId}/results`),
-      fetch(`/api/jobs/${jobId}`),
-    ]);
-    const resultsData = await resultsRes.json();
-    const jobData = await jobRes.json();
-    if (resultsData.success) {
-      setSession(resultsData.data.session);
-      setResults(resultsData.data.results);
-      // Results loaded — auto-expand handled by separate useEffect
+    try {
+      const [resultsRes, jobRes] = await Promise.all([
+        fetch(`/api/jobs/${jobId}/results`),
+        fetch(`/api/jobs/${jobId}`),
+      ]);
+      if (!resultsRes.ok || !jobRes.ok) throw new Error("Failed to load screening data");
+      const resultsData = await resultsRes.json();
+      const jobData = await jobRes.json();
+      if (resultsData.success) {
+        setSession(resultsData.data.session);
+        setResults(resultsData.data.results);
+      }
+      if (jobData.success) setJob(jobData.data);
+    } catch (err) {
+      console.error("Load results error:", err);
     }
-    if (jobData.success) setJob(jobData.data);
     setLoading(false);
   }, [jobId]);
 
-  useEffect(() => { loadResults(); }, [loadResults]);
+  useEffect(() => {
+    loadResults();
+  }, [loadResults]);
 
   useEffect(() => {
     if (!session || !["pending", "processing"].includes(session.status)) return;
@@ -132,7 +173,6 @@ export default function ResultsPage() {
     return () => clearInterval(interval);
   }, [session, loadResults]);
 
-  // Fix #5: Auto-expand first candidate in separate effect (no stale closure)
   useEffect(() => {
     if (results.length > 0 && expandedRow === null) {
       setExpandedRow(results[0]._id);
@@ -142,14 +182,18 @@ export default function ResultsPage() {
 
   const triggerScreening = async () => {
     setTriggerLoading(true);
-    const res = await fetch(`/api/jobs/${jobId}/screen`, { method: "POST" });
-    const data = await res.json();
-    if (data.success) {
-      setSession(data.data);
-      setResults([]);
-      toast("AI Screening started", "info");
-    } else {
-      toast(data.error || "Failed to start screening", "error");
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/screen`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSession(data.data);
+        setResults([]);
+        toast("AI Screening started", "info");
+      } else {
+        toast(data.error || "Failed to start screening", "error");
+      }
+    } catch {
+      toast("Failed to start screening", "error");
     }
     setTriggerLoading(false);
   };
@@ -164,9 +208,10 @@ export default function ResultsPage() {
     const data = await res.json();
     if (data.success) {
       setResults((prev) =>
-        prev.map((r) => r.candidateId === candidateId ? { ...r, recruiterDecision: decision } : r)
+        prev.map((r) => (r.candidateId === candidateId ? { ...r, recruiterDecision: decision } : r))
       );
-      const label = decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
+      const label =
+        decision === "shortlisted" ? "Shortlisted" : decision === "interview" ? "Marked for Interview" : "Rejected";
       toast(`Candidate ${label}`);
     }
     setDecisionLoading(null);
@@ -179,16 +224,23 @@ export default function ResultsPage() {
 
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case "score": return b.overallScore - a.overallScore;
-        case "skills": return b.breakdown.skillsMatch - a.breakdown.skillsMatch;
-        case "experience": return b.breakdown.experienceMatch - a.breakdown.experienceMatch;
-        default: return a.rank - b.rank;
+        case "score":
+          return b.overallScore - a.overallScore;
+        case "skills":
+          return b.breakdown.skillsMatch - a.breakdown.skillsMatch;
+        case "experience":
+          return b.breakdown.experienceMatch - a.breakdown.experienceMatch;
+        default:
+          return a.rank - b.rank;
       }
     });
   }, [results, minScore, matchFilter, decisionFilter, sortBy]);
 
   const exportCSV = () => {
-    const headers = ["Rank", "Name", "Email", "Score", "Skills Match", "Experience", "Education", "Culture Fit", "Confidence", "Recommendation", "Decision", "Strengths", "Gaps", "AI Reasoning"];
+    const headers = [
+      "Rank", "Name", "Email", "Score", "Skills Match", "Experience", "Education", "Culture Fit",
+      "Confidence", "Recommendation", "Decision", "Strengths", "Gaps", "AI Reasoning",
+    ];
     const rows = filteredResults.map((r) => [
       r.rank, r.candidateName, r.candidateEmail, r.overallScore,
       r.breakdown.skillsMatch, r.breakdown.experienceMatch, r.breakdown.educationMatch, r.breakdown.cultureFitMatch,
@@ -204,7 +256,12 @@ export default function ResultsPage() {
     a.click();
   };
 
-  if (loading) return <AppLayout><PageLoader /></AppLayout>;
+  if (loading)
+    return (
+      <AppLayout>
+        <PageLoader />
+      </AppLayout>
+    );
 
   const isScreening = session && ["pending", "processing"].includes(session.status);
   const topCandidate = results.length > 0 ? results[0] : null;
@@ -212,64 +269,104 @@ export default function ResultsPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto">
-
         {/* Job Context Header */}
         {job && (
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 mb-6 text-white">
-            <div className="flex items-start justify-between">
-              <div>
+          <PaperCard className="mb-6" padding="p-5">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Briefcase className="h-5 w-5 text-blue-200" />
-                  <span className="text-blue-200 text-sm font-medium">{job.company}</span>
+                  <span
+                    style={{
+                      fontSize: 17,
+                      color: "var(--paper-text-3)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {job.company}
+                  </span>
                 </div>
-                <h1 className="text-2xl font-bold mb-3">{job.title}</h1>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <h1
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 700,
+                    color: "var(--paper-text-1)",
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.1,
+                    marginBottom: 12,
+                  }}
+                >
+                  {job.title}
+                </h1>
+                <div className="flex flex-wrap gap-1.5 mb-3">
                   {job.requirements.skills.slice(0, 6).map((s) => (
-                    <span key={s} className="bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                    <PaperBadge key={s} variant="info">
                       {s}
-                    </span>
+                    </PaperBadge>
                   ))}
                   {job.requirements.skills.length > 6 && (
-                    <span className="bg-white/10 text-blue-200 text-xs px-2.5 py-1 rounded-full">
-                      +{job.requirements.skills.length - 6} more
-                    </span>
+                    <PaperBadge>+{job.requirements.skills.length - 6} more</PaperBadge>
                   )}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-blue-200">
-                  <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
-                  <span>{job.requirements.experience.min}-{job.requirements.experience.max} years experience</span>
+                <div
+                  className="flex flex-wrap items-center gap-x-5 gap-y-2"
+                  style={{ fontSize: 16, color: "var(--paper-text-3)" }}
+                >
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" /> {job.location}
+                  </span>
+                  <span>
+                    {job.requirements.experience.min}-{job.requirements.experience.max} years experience
+                  </span>
                   <span>Top {job.screeningConfig.shortlistSize} shortlist</span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {results.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={exportCSV} className="text-white hover:bg-white/10">
-                    <Download className="h-4 w-4" /> Export
-                  </Button>
+                  <>
+                    <PaperButton variant="ghost" size="sm" onClick={() => router.push(`/jobs/${jobId}/pipeline`)}>
+                      <Columns3 className="h-4 w-4" /> Pipeline
+                    </PaperButton>
+                    <PaperButton variant="ghost" size="sm" onClick={exportCSV}>
+                      <Download className="h-4 w-4" /> Export
+                    </PaperButton>
+                  </>
                 )}
-                <button
-                  onClick={triggerScreening}
-                  disabled={triggerLoading || !!isScreening}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg font-semibold px-5 py-2.5 text-sm bg-white text-blue-700 hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-50"
-                >
+                <PaperButton onClick={triggerScreening} disabled={triggerLoading || !!isScreening} size="sm">
                   <Play className="h-4 w-4" /> {isScreening ? "Screening..." : "Run AI Screening"}
-                </button>
+                </PaperButton>
               </div>
             </div>
-          </div>
+          </PaperCard>
         )}
 
         {/* Progress bar during screening */}
         {isScreening && session && (
-          <Card className="mb-6 border-blue-200 bg-blue-50/50">
+          <PaperCard className="mb-6" style={{ borderColor: "var(--paper-border-acc)", background: "var(--paper-accent-soft)" }}>
             <div className="flex items-center gap-3 mb-3">
               <div className="relative">
-                <Brain className="h-6 w-6 text-blue-600" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-ping" />
+                <Brain className="h-6 w-6" style={{ color: "var(--paper-accent)" }} />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -4,
+                    width: 10,
+                    height: 10,
+                    background: "var(--paper-accent)",
+                    borderRadius: "50%",
+                    animation: "pulse-dot 1.2s infinite",
+                  }}
+                />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">AI Screening in progress</p>
-                <p className="text-xs text-gray-500">Analyzing candidates against job requirements...</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--paper-text-1)" }}>
+                  AI Screening in progress
+                </p>
+                <p style={{ fontSize: 17, color: "var(--paper-text-3)" }}>
+                  Analyzing candidates against job requirements...
+                </p>
               </div>
             </div>
             <ProgressBar
@@ -277,7 +374,7 @@ export default function ResultsPage() {
               max={session.totalCandidates}
               label={`Scoring candidates (${session.processedCandidates} of ${session.totalCandidates})`}
             />
-          </Card>
+          </PaperCard>
         )}
 
         {/* Responsible AI Notice */}
@@ -287,161 +384,312 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Stats bar when results exist */}
+        {/* Stats bar */}
         {results.length > 0 && !isScreening && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <Card className="text-center py-4">
-              <p className="text-2xl font-bold text-gray-900">{results.length}</p>
-              <p className="text-xs text-gray-500">Candidates Screened</p>
-            </Card>
-            <Card className="text-center py-4">
-              <p className="text-2xl font-bold text-green-600">{results.filter((r) => r.recommendation === "strong_match").length}</p>
-              <p className="text-xs text-gray-500">Strong Matches</p>
-            </Card>
-            <Card className="text-center py-4">
-              <p className="text-2xl font-bold text-blue-600">{Math.round(results.reduce((s, r) => s + r.overallScore, 0) / results.length)}</p>
-              <p className="text-xs text-gray-500">Avg Score</p>
-            </Card>
-            <Card className="text-center py-4">
-              <p className="text-2xl font-bold text-purple-600">{Math.round(results.reduce((s, r) => s + r.confidenceScore, 0) / results.length)}%</p>
-              <p className="text-xs text-gray-500">Avg AI Confidence</p>
-            </Card>
+            {[
+              { value: results.length, label: "Candidates Screened", color: "var(--paper-text-1)" },
+              {
+                value: results.filter((r) => r.recommendation === "strong_match").length,
+                label: "Strong Matches",
+                color: "var(--paper-green)",
+              },
+              {
+                value: Math.round(results.reduce((s, r) => s + r.overallScore, 0) / results.length),
+                label: "Avg Score",
+                color: "var(--paper-accent)",
+              },
+              {
+                value: `${Math.round(results.reduce((s, r) => s + r.confidenceScore, 0) / results.length)}%`,
+                label: "Avg AI Confidence",
+                color: "#7C3AED",
+              },
+            ].map((s) => (
+              <PaperCard key={s.label} padding="p-4" className="text-center">
+                <p
+                  style={{
+                    fontSize: 28,
+                    fontWeight: 700,
+                    color: s.color,
+                    lineHeight: 1,
+                    fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                  }}
+                >
+                  {s.value}
+                </p>
+                <p style={{ fontSize: 16, color: "var(--paper-text-3)", marginTop: 6 }}>{s.label}</p>
+              </PaperCard>
+            ))}
           </div>
         )}
 
         {/* Score Distribution Chart */}
         {results.length > 1 && !isScreening && (
-          <Card className="mb-6">
+          <PaperCard className="mb-6">
             <ScoreDistributionChart
               candidates={results.map((r) => ({ name: r.candidateName, score: r.overallScore, rank: r.rank }))}
               shortlistSize={job?.screeningConfig.shortlistSize || 10}
             />
-          </Card>
+          </PaperCard>
         )}
 
-        {/* Why #1 highlight */}
+        {/* Top candidate highlight */}
         {topCandidate && !isScreening && results.length > 1 && (
-          <Card className="mb-6 border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50">
-            <div className="flex items-start gap-4">
-              <div className="bg-yellow-100 p-2.5 rounded-xl">
-                <Star className="h-6 w-6 text-yellow-600" />
+          <PaperCard
+            className="mb-6"
+            style={{
+              background: "rgba(180,83,9,0.05)",
+              borderColor: "rgba(180,83,9,0.3)",
+            }}
+          >
+            <div className="flex items-start gap-4 flex-wrap">
+              <div
+                style={{
+                  background: "rgba(180,83,9,0.15)",
+                  border: "1.5px solid rgba(180,83,9,0.3)",
+                  borderRadius: 6,
+                  padding: 10,
+                  flexShrink: 0,
+                }}
+              >
+                <Star className="h-6 w-6" style={{ color: "var(--paper-amber)" }} />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-gray-900">Top Candidate: {topCandidate.candidateName}</h3>
-                  <span className="bg-yellow-200 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">#{topCandidate.rank}</span>
-                  <span className="text-2xl font-bold text-green-600">{topCandidate.overallScore}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--paper-text-1)" }}>
+                    Top Candidate: {topCandidate.candidateName}
+                  </h3>
+                  <PaperBadge variant="warning">#{topCandidate.rank}</PaperBadge>
+                  <span
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 700,
+                      color: "var(--paper-green)",
+                      fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                    }}
+                  >
+                    {topCandidate.overallScore}
+                  </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{topCandidate.reasoning}</p>
+                <p style={{ fontSize: 17, color: "var(--paper-text-2)", marginBottom: 8 }}>{topCandidate.reasoning}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {topCandidate.strengths.map((s, i) => (
-                    <span key={i} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{s}</span>
+                    <PaperBadge key={i} variant="success">
+                      {s}
+                    </PaperBadge>
                   ))}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => router.push(`/candidates/${topCandidate.candidateId}`)}>
+              <PaperButton
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(`/candidates/${topCandidate.candidateId}`)}
+              >
                 <Eye className="h-4 w-4" /> View
-              </Button>
+              </PaperButton>
             </div>
-          </Card>
+          </PaperCard>
         )}
 
-        {/* Compare Top 3 Modal */}
+        {/* Compare Modal */}
         {showCompare && results.length >= 2 && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCompare(false)}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white rounded-t-2xl z-10">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(23,24,38,0.5)" }}
+            onClick={() => setShowCompare(false)}
+          >
+            <div
+              className="w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+              style={{
+                background: "var(--paper-card)",
+                border: "1.5px solid var(--paper-border)",
+                borderRadius: 6,
+                boxShadow: "4px 6px 0 rgba(0,0,0,0.08), 0 14px 36px rgba(0,0,0,0.14)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="flex items-center justify-between sticky top-0 z-10"
+                style={{
+                  padding: "14px 20px",
+                  borderBottom: "1.5px solid var(--paper-border)",
+                  background: "var(--paper-card)",
+                }}
+              >
                 <div className="flex items-center gap-2">
-                  <GitCompareArrows className="h-5 w-5 text-blue-600" />
-                  <h2 className="text-lg font-bold text-gray-900">Compare Top Candidates</h2>
+                  <GitCompareArrows className="h-5 w-5" style={{ color: "var(--paper-accent)" }} />
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "var(--paper-text-1)" }}>
+                    Compare Top Candidates
+                  </h2>
                 </div>
-                <button onClick={() => setShowCompare(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                <button
+                  onClick={() => setShowCompare(false)}
+                  style={{
+                    padding: 4,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--paper-text-3)",
+                    display: "flex",
+                  }}
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="p-6">
-                <div className={`grid gap-4 ${results.slice(0, 3).length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+              <div style={{ padding: 20 }}>
+                <div className={`grid gap-4 grid-cols-1 ${results.slice(0, 3).length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
                   {results.slice(0, 3).map((r) => (
-                    <div key={r._id} className={`rounded-xl border-2 p-5 ${r.rank === 1 ? "border-yellow-300 bg-yellow-50/30" : "border-gray-200"}`}>
-                      {/* Header */}
+                    <PaperCard
+                      key={r._id}
+                      padding="p-5"
+                      style={r.rank === 1 ? { borderColor: "rgba(180,83,9,0.35)", background: "rgba(180,83,9,0.04)" } : {}}
+                    >
                       <div className="text-center mb-4">
-                        <div className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center text-lg font-bold mb-2 ${
-                          r.rank === 1 ? "bg-yellow-100 text-yellow-700" : r.rank === 2 ? "bg-gray-100 text-gray-600" : "bg-orange-100 text-orange-600"
-                        }`}>
+                        <div
+                          className="torn-bg-dramatic"
+                          style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 8,
+                            margin: "0 auto",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 22,
+                            fontWeight: 700,
+                            marginBottom: 8,
+                            border: "2px solid var(--paper-text-1)",
+                            color: "#fff",
+                            boxShadow: "2px 3px 0 var(--paper-text-1)",
+                            fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                            ["--torn-color" as string]: "var(--paper-accent)",
+                          } as React.CSSProperties}
+                        >
                           {r.candidateName.charAt(0)}
                         </div>
-                        <h3 className="font-bold text-gray-900">{r.candidateName}</h3>
+                        <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--paper-text-1)" }}>
+                          {r.candidateName}
+                        </h3>
                         <div className="flex items-center justify-center gap-1 mt-1">
-                          <Trophy className={`h-4 w-4 ${r.rank === 1 ? "text-yellow-500" : r.rank === 2 ? "text-gray-400" : "text-orange-400"}`} />
-                          <span className="text-sm text-gray-500">Rank #{r.rank}</span>
+                          <Trophy
+                            className="h-4 w-4"
+                            style={{
+                              color:
+                                r.rank === 1
+                                  ? "var(--paper-amber)"
+                                  : r.rank === 2
+                                  ? "var(--paper-text-3)"
+                                  : "var(--paper-amber)",
+                            }}
+                          />
+                          <span style={{ fontSize: 16, color: "var(--paper-text-3)" }}>Rank #{r.rank}</span>
                         </div>
-                        <p className={`text-4xl font-bold mt-2 ${r.overallScore >= 80 ? "text-green-600" : r.overallScore >= 60 ? "text-blue-600" : "text-yellow-600"}`}>
-                          {r.overallScore}
-                        </p>
-                        <StatusBadge status={r.recommendation} />
+                        <div className="flex justify-center mt-3">
+                          <ScoreRing score={r.overallScore} size={92} stroke={7} />
+                        </div>
+                        <div className="mt-3">
+                          <PaperStatusBadge status={r.recommendation} />
+                        </div>
                       </div>
 
-                      {/* Score bars */}
-                      <div className="space-y-2.5 mb-4">
-                        {[
-                          { label: "Skills", score: r.breakdown.skillsMatch },
-                          { label: "Experience", score: r.breakdown.experienceMatch },
-                          { label: "Education", score: r.breakdown.educationMatch },
-                          { label: "Culture Fit", score: r.breakdown.cultureFitMatch },
-                        ].map((s) => (
-                          <div key={s.label}>
-                            <div className="flex justify-between mb-0.5">
-                              <span className="text-xs text-gray-500">{s.label}</span>
-                              <span className="text-xs font-bold text-gray-700">{s.score}</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2">
-                              <div
-                                className={`h-2 rounded-full ${s.score >= 70 ? "bg-green-500" : s.score >= 50 ? "bg-yellow-500" : "bg-red-400"}`}
-                                style={{ width: `${s.score}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                      <div className="flex justify-center mb-3">
+                        <RadarChart
+                          skills={r.breakdown.skillsMatch}
+                          experience={r.breakdown.experienceMatch}
+                          education={r.breakdown.educationMatch}
+                          culture={r.breakdown.cultureFitMatch}
+                          size={170}
+                        />
                       </div>
 
-                      {/* Confidence */}
-                      <div className="flex items-center justify-between bg-purple-50 rounded-lg px-3 py-2 mb-4">
-                        <span className="text-xs font-medium text-purple-700">AI Confidence</span>
-                        <span className="text-sm font-bold text-purple-700">{r.confidenceScore}%</span>
+                      <div
+                        className="flex items-center justify-between mb-4"
+                        style={{
+                          background: "var(--paper-accent-soft)",
+                          border: "1.5px solid var(--paper-border-acc)",
+                          borderRadius: 5,
+                          padding: "8px 12px",
+                        }}
+                      >
+                        <span style={{ fontSize: 17, fontWeight: 700, color: "var(--paper-accent)" }}>
+                          AI Confidence
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "var(--paper-accent)",
+                            fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                          }}
+                        >
+                          {r.confidenceScore}%
+                        </span>
                       </div>
 
-                      {/* Strengths */}
                       <div className="mb-3">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Strengths</p>
+                        <p
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "var(--paper-text-3)",
+                            letterSpacing: "0.06em",
+                            marginBottom: 6,
+                          }}
+                        >
+                          STRENGTHS
+                        </p>
                         <div className="space-y-1">
                           {r.strengths.map((s, i) => (
                             <div key={i} className="flex items-start gap-1.5">
-                              <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-xs text-gray-700">{s}</span>
+                              <CheckCircle
+                                className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                                style={{ color: "var(--paper-green)" }}
+                              />
+                              <span style={{ fontSize: 17, color: "var(--paper-text-2)" }}>{s}</span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {/* Gaps */}
                       <div className="mb-3">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Gaps</p>
+                        <p
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "var(--paper-text-3)",
+                            letterSpacing: "0.06em",
+                            marginBottom: 6,
+                          }}
+                        >
+                          GAPS
+                        </p>
                         <div className="space-y-1">
                           {r.gaps.map((g, i) => (
                             <div key={i} className="flex items-start gap-1.5">
-                              <XCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-xs text-gray-700">{g}</span>
+                              <XCircle
+                                className="h-3.5 w-3.5 mt-0.5 flex-shrink-0"
+                                style={{ color: "var(--paper-amber)" }}
+                              />
+                              <span style={{ fontSize: 17, color: "var(--paper-text-2)" }}>{g}</span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {/* Reasoning */}
-                      <div className="bg-blue-50 rounded-lg p-3">
-                        <p className="text-xs font-bold text-blue-700 mb-1">AI Reasoning</p>
-                        <p className="text-xs text-blue-800 leading-relaxed">{r.reasoning}</p>
+                      <div
+                        style={{
+                          background: "var(--paper-accent-soft)",
+                          border: "1.5px solid var(--paper-border-acc)",
+                          borderRadius: 5,
+                          padding: 12,
+                        }}
+                      >
+                        <p style={{ fontSize: 16, fontWeight: 700, color: "var(--paper-accent)", marginBottom: 4 }}>
+                          AI Reasoning
+                        </p>
+                        <p style={{ fontSize: 17, color: "var(--paper-text-2)", lineHeight: 1.5 }}>{r.reasoning}</p>
                       </div>
-                    </div>
+                    </PaperCard>
                   ))}
                 </div>
               </div>
@@ -451,24 +699,40 @@ export default function ResultsPage() {
 
         {/* Filters & Sort */}
         {results.length > 0 && (
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Button variant={showFilters ? "primary" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <PaperButton
+                variant={showFilters ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
                 <Filter className="h-4 w-4" /> Filters
-              </Button>
+              </PaperButton>
               {results.length >= 2 && (
-                <Button variant="outline" size="sm" onClick={() => setShowCompare(true)}>
+                <PaperButton variant="ghost" size="sm" onClick={() => setShowCompare(true)}>
                   <GitCompareArrows className="h-4 w-4" /> Compare Top {Math.min(3, results.length)}
-                </Button>
+                </PaperButton>
               )}
-              <span className="text-sm text-gray-500">{filteredResults.length} of {results.length} candidates</span>
+              <span style={{ fontSize: 16, color: "var(--paper-text-3)" }}>
+                {filteredResults.length} of {results.length} candidates
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <SortDesc className="h-4 w-4 text-gray-400" />
+              <SortDesc className="h-4 w-4" style={{ color: "var(--paper-text-4)" }} />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortField)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white"
+                style={{
+                  fontSize: 17,
+                  border: "1.5px solid var(--paper-border)",
+                  borderRadius: 5,
+                  padding: "6px 10px",
+                  background: "var(--paper-card)",
+                  color: "var(--paper-text-1)",
+                  fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                  cursor: "pointer",
+                  outline: "none",
+                }}
               >
                 <option value="rank">Sort by Rank</option>
                 <option value="score">Sort by Score</option>
@@ -480,10 +744,21 @@ export default function ResultsPage() {
         )}
 
         {showFilters && (
-          <Card className="mb-4">
+          <PaperCard className="mb-4">
             <div className="flex flex-wrap items-center gap-6">
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">Min Score</label>
+                <label
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--paper-text-3)",
+                    letterSpacing: "0.06em",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  MIN SCORE
+                </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"
@@ -491,14 +766,35 @@ export default function ResultsPage() {
                     max={100}
                     value={minScore}
                     onChange={(e) => setMinScore(Number(e.target.value))}
-                    className="w-32 accent-blue-600"
+                    style={{ width: 128 }}
                   />
-                  <span className="text-sm font-medium text-gray-900 w-8">{minScore}</span>
+                  <span
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "var(--paper-text-1)",
+                      width: 32,
+                      fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                    }}
+                  >
+                    {minScore}
+                  </span>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">Match Type</label>
-                <div className="flex gap-1.5">
+                <label
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--paper-text-3)",
+                    letterSpacing: "0.06em",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  MATCH TYPE
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
                   {[
                     { value: "all", label: "All" },
                     { value: "strong_match", label: "Strong" },
@@ -506,23 +802,30 @@ export default function ResultsPage() {
                     { value: "partial_match", label: "Partial" },
                     { value: "weak_match", label: "Weak" },
                   ].map((f) => (
-                    <button
+                    <FilterPill
                       key={f.value}
+                      active={matchFilter === f.value}
                       onClick={() => setMatchFilter(f.value as FilterMatch)}
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                        matchFilter === f.value
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
                     >
                       {f.label}
-                    </button>
+                    </FilterPill>
                   ))}
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1.5">Decision</label>
-                <div className="flex gap-1.5">
+                <label
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--paper-text-3)",
+                    letterSpacing: "0.06em",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  DECISION
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
                   {[
                     { value: "all", label: "All" },
                     { value: "shortlisted", label: "Shortlisted" },
@@ -530,332 +833,523 @@ export default function ResultsPage() {
                     { value: "rejected", label: "Rejected" },
                     { value: "pending", label: "Pending" },
                   ].map((f) => (
-                    <button
+                    <FilterPill
                       key={f.value}
+                      active={decisionFilter === f.value}
                       onClick={() => setDecisionFilter(f.value as FilterDecision)}
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                        decisionFilter === f.value
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
                     >
                       {f.label}
-                    </button>
+                    </FilterPill>
                   ))}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setMinScore(0); setMatchFilter("all"); setDecisionFilter("all"); setSortBy("rank"); }}>
+              <PaperButton
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setMinScore(0);
+                  setMatchFilter("all");
+                  setDecisionFilter("all");
+                  setSortBy("rank");
+                }}
+              >
                 Reset
-              </Button>
+              </PaperButton>
             </div>
-          </Card>
+          </PaperCard>
         )}
 
         {/* Results */}
         {results.length === 0 && !isScreening ? (
-          <Card>
+          <PaperCard>
             <EmptyState
               icon={Brain}
               title="No screening results"
               description="Run AI screening to analyze and rank your candidates."
               action={{ label: "Run Screening", onClick: triggerScreening }}
             />
-          </Card>
+          </PaperCard>
         ) : filteredResults.length === 0 && results.length > 0 ? (
-          <Card>
+          <PaperCard>
             <EmptyState
               icon={Filter}
               title="No candidates match your filters"
-              description={`${results.length} candidates were screened, but none match the current filter settings. Try adjusting the minimum score or match type.`}
-              action={{ label: "Reset Filters", onClick: () => { setMinScore(0); setMatchFilter("all"); setDecisionFilter("all"); setSortBy("rank"); } }}
+              description={`${results.length} candidates were screened, but none match the current filter settings.`}
+              action={{
+                label: "Reset Filters",
+                onClick: () => {
+                  setMinScore(0);
+                  setMatchFilter("all");
+                  setDecisionFilter("all");
+                  setSortBy("rank");
+                },
+              }}
             />
-          </Card>
-        ) : filteredResults.length > 0 && (
-          <div className="space-y-3">
-            {filteredResults.map((r) => {
-              const isTop3 = r.rank <= 3;
-              const isExpanded = expandedRow === r._id;
-              const decisionBusy = decisionLoading === r.candidateId;
+          </PaperCard>
+        ) : (
+          filteredResults.length > 0 && (
+            <div className="space-y-3">
+              {filteredResults.map((r, idx) => {
+                const isTop3 = r.rank <= 3;
+                const isExpanded = expandedRow === r._id;
+                const decisionBusy = decisionLoading === r.candidateId;
 
-              return (
-                <div
-                  key={r._id}
-                  className={`bg-white rounded-xl border transition-all ${
-                    isTop3 ? "border-blue-200 shadow-md shadow-blue-50" : "border-gray-200"
-                  } ${isExpanded ? "ring-2 ring-blue-100" : "hover:shadow-md"}`}
-                >
-                  {/* Row header */}
+                return (
                   <div
-                    className="flex items-center gap-4 p-5 cursor-pointer"
-                    onClick={() => setExpandedRow(isExpanded ? null : r._id)}
+                    key={r._id}
+                    className="wb-fade-in"
+                    style={{
+                      background: "var(--paper-card)",
+                      border: `1.5px solid ${isTop3 ? "var(--paper-border-acc)" : "var(--paper-border)"}`,
+                      borderRadius: 6,
+                      boxShadow: "var(--paper-shadow-card)",
+                      transition: "border-color 0.15s, box-shadow 0.15s",
+                      ["--wb-delay" as string]: `${idx * 60}ms`,
+                    } as React.CSSProperties}
                   >
-                    {/* Rank */}
-                    <div className="flex items-center justify-center w-10">
-                      {r.rank === 1 ? (
-                        <div className="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center">
-                          <Trophy className="h-5 w-5 text-yellow-600" />
-                        </div>
-                      ) : r.rank === 2 ? (
-                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                          <Trophy className="h-5 w-5 text-gray-500" />
-                        </div>
-                      ) : r.rank === 3 ? (
-                        <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Trophy className="h-5 w-5 text-orange-500" />
-                        </div>
-                      ) : (
-                        <span className="text-lg font-bold text-gray-300">#{r.rank}</span>
-                      )}
-                    </div>
-
-                    {/* Avatar + Name */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                        isTop3 ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
-                      }`}>
-                        {r.candidateName.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900 truncate">{r.candidateName}</p>
-                          {isTop3 && (
-                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                              Top {r.rank}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {r.candidateTopSkills.slice(0, 3).map((s) => (
-                            <span key={s} className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{s}</span>
-                          ))}
-                          {r.candidateTopSkills.length > 3 && (
-                            <span className="text-[11px] text-gray-400">+{r.candidateTopSkills.length - 3}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Score with mini bar */}
-                    <div className="w-28 text-center">
-                      <p className={`text-3xl font-bold ${
-                        r.overallScore >= 80 ? "text-green-600" : r.overallScore >= 60 ? "text-blue-600" : r.overallScore >= 40 ? "text-yellow-600" : "text-red-500"
-                      }`}>
-                        {r.overallScore}
-                      </p>
-                      <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${
-                            r.overallScore >= 80 ? "bg-green-500" : r.overallScore >= 60 ? "bg-blue-500" : r.overallScore >= 40 ? "bg-yellow-500" : "bg-red-500"
-                          }`}
-                          style={{ width: `${r.overallScore}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Recommendation */}
-                    <StatusBadge status={r.recommendation} />
-
-                    {/* Confidence */}
-                    <div className="hidden lg:flex items-center gap-1.5 w-20">
-                      <Shield className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-600">{r.confidenceScore}%</span>
-                    </div>
-
-                    {/* Decision buttons (inline) */}
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleDecision(r.candidateId, "shortlisted")}
-                        disabled={decisionBusy}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          r.recruiterDecision === "shortlisted"
-                            ? "bg-green-100 text-green-700"
-                            : "text-gray-300 hover:text-green-600 hover:bg-green-50"
-                        }`}
-                        title="Shortlist"
-                      >
-                        <CheckCircle className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDecision(r.candidateId, "interview")}
-                        disabled={decisionBusy}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          r.recruiterDecision === "interview"
-                            ? "bg-purple-100 text-purple-700"
-                            : "text-gray-300 hover:text-purple-600 hover:bg-purple-50"
-                        }`}
-                        title="Interview"
-                      >
-                        <Calendar className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDecision(r.candidateId, "rejected")}
-                        disabled={decisionBusy}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          r.recruiterDecision === "rejected"
-                            ? "bg-red-100 text-red-700"
-                            : "text-gray-300 hover:text-red-500 hover:bg-red-50"
-                        }`}
-                        title="Reject"
-                      >
-                        <XCircle className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    {/* Expand toggle */}
-                    <div className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
-
-                  {/* Expanded detail panel */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 bg-gray-50/50">
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                          {/* Column 1: Score Breakdown */}
-                          <div>
-                            <div className="flex items-center gap-2 mb-4">
-                              <Target className="h-4 w-4 text-blue-600" />
-                              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Score Breakdown</h4>
-                            </div>
-                            <div className="space-y-3">
-                              <ScoreBar score={r.breakdown.skillsMatch} label="Skills Match" />
-                              <ScoreBar score={r.breakdown.experienceMatch} label="Experience" />
-                              <ScoreBar score={r.breakdown.educationMatch} label="Education" />
-                              <ScoreBar score={r.breakdown.cultureFitMatch} label="Culture Fit" />
-                            </div>
-                            <div className="mt-4 pt-3 border-t border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                  <Shield className="h-4 w-4 text-purple-500" />
-                                  <span className="text-sm font-medium text-gray-700">AI Confidence</span>
-                                </div>
-                                <span className={`text-lg font-bold ${
-                                  r.confidenceScore >= 80 ? "text-green-600" : r.confidenceScore >= 60 ? "text-blue-600" : "text-yellow-600"
-                                }`}>
-                                  {r.confidenceScore}%
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1.5">
-                                <div
-                                  className={`h-2 rounded-full ${
-                                    r.confidenceScore >= 80 ? "bg-purple-500" : r.confidenceScore >= 60 ? "bg-purple-400" : "bg-purple-300"
-                                  }`}
-                                  style={{ width: `${r.confidenceScore}%` }}
-                                />
-                              </div>
-                            </div>
+                    {/* Row header */}
+                    <div
+                      className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4 cursor-pointer"
+                      onClick={() => setExpandedRow(isExpanded ? null : r._id)}
+                    >
+                      {/* Rank */}
+                      <div className="flex items-center justify-center w-10 flex-shrink-0">
+                        {r.rank <= 3 ? (
+                          <div
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 6,
+                              background:
+                                r.rank === 1 ? "rgba(180,83,9,0.15)" : r.rank === 2 ? "rgba(107,115,138,0.15)" : "rgba(180,83,9,0.1)",
+                              border: `1.5px solid ${r.rank === 1 ? "rgba(180,83,9,0.4)" : r.rank === 2 ? "rgba(107,115,138,0.3)" : "rgba(180,83,9,0.3)"}`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Trophy
+                              className="h-5 w-5"
+                              style={{
+                                color:
+                                  r.rank === 1
+                                    ? "var(--paper-amber)"
+                                    : r.rank === 2
+                                    ? "var(--paper-text-3)"
+                                    : "var(--paper-amber)",
+                              }}
+                            />
                           </div>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: 20,
+                              fontWeight: 700,
+                              color: "var(--paper-text-4)",
+                              fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                            }}
+                          >
+                            #{r.rank}
+                          </span>
+                        )}
+                      </div>
 
-                          {/* Column 2: Strengths & Gaps */}
-                          <div>
-                            <div className="mb-4">
-                              <div className="flex items-center gap-2 mb-3">
-                                <Sparkles className="h-4 w-4 text-green-600" />
-                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Strengths</h4>
-                              </div>
-                              <div className="space-y-1.5">
-                                {r.strengths.map((s, i) => (
-                                  <div key={i} className="flex items-start gap-2 bg-green-50 rounded-lg px-3 py-2">
-                                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm text-green-800">{s}</span>
-                                  </div>
-                                ))}
-                                {r.strengths.length === 0 && (
-                                  <p className="text-sm text-gray-400 italic">No strengths identified</p>
-                                )}
-                              </div>
-                            </div>
+                      {/* Avatar + Name */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div
+                          className="torn-bg-dramatic"
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 6,
+                            border: "2px solid var(--paper-text-1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            fontSize: 17,
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                            ["--torn-color" as string]: isTop3 ? "var(--paper-accent)" : "var(--paper-text-3)",
+                          } as React.CSSProperties}
+                        >
+                          {r.candidateName.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p
+                              style={{
+                                fontSize: 17,
+                                fontWeight: 700,
+                                color: "var(--paper-text-1)",
+                                lineHeight: 1.2,
+                              }}
+                              className="truncate"
+                            >
+                              {r.candidateName}
+                            </p>
+                            {isTop3 && <PaperBadge variant="accent">Top {r.rank}</PaperBadge>}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {r.candidateTopSkills.slice(0, 3).map((s) => (
+                              <span
+                                key={s}
+                                style={{
+                                  fontSize: 15,
+                                  background: "var(--paper-input-bg)",
+                                  color: "var(--paper-text-3)",
+                                  padding: "1px 8px",
+                                  borderRadius: 3,
+                                  border: "1px solid var(--paper-border)",
+                                }}
+                              >
+                                {s}
+                              </span>
+                            ))}
+                            {r.candidateTopSkills.length > 3 && (
+                              <span style={{ fontSize: 15, color: "var(--paper-text-4)" }}>
+                                +{r.candidateTopSkills.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
+                      {/* Score ring */}
+                      <div className="hidden sm:block flex-shrink-0">
+                        <ScoreRing score={r.overallScore} size={52} stroke={5} />
+                      </div>
+
+                      {/* Recommendation */}
+                      <div className="flex-shrink-0">
+                        <PaperStatusBadge status={r.recommendation} />
+                      </div>
+
+                      {/* Confidence */}
+                      <div
+                        className="hidden lg:flex items-center gap-1.5 w-20 flex-shrink-0"
+                        style={{ fontSize: 16, color: "var(--paper-text-3)" }}
+                      >
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>{r.confidenceScore}%</span>
+                      </div>
+
+                      {/* Decision buttons */}
+                      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {[
+                          { key: "shortlisted", icon: CheckCircle, color: "var(--paper-green)", title: "Shortlist" },
+                          { key: "interview", icon: Calendar, color: "var(--paper-accent)", title: "Interview" },
+                          { key: "rejected", icon: XCircle, color: "var(--paper-red)", title: "Reject" },
+                        ].map((d) => {
+                          const isActive = r.recruiterDecision === d.key;
+                          return (
+                            <button
+                              key={d.key}
+                              onClick={() => handleDecision(r.candidateId, d.key)}
+                              disabled={decisionBusy}
+                              title={d.title}
+                              style={{
+                                padding: 6,
+                                borderRadius: 4,
+                                background: isActive ? `${d.color}20` : "transparent",
+                                color: isActive ? d.color : "var(--paper-text-4)",
+                                border: "none",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <d.icon className="h-5 w-5" />
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div
+                        className="flex-shrink-0"
+                        style={{ transform: isExpanded ? "rotate(180deg)" : "", transition: "transform 0.15s" }}
+                      >
+                        <ChevronDown className="h-5 w-5" style={{ color: "var(--paper-text-4)" }} />
+                      </div>
+                    </div>
+
+                    {/* Expanded panel */}
+                    {isExpanded && (
+                      <div style={{ borderTop: "1.5px solid var(--paper-border)", background: "var(--paper-input-bg)" }}>
+                        <div className="p-5">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Score Breakdown + Radar */}
                             <div>
                               <div className="flex items-center gap-2 mb-3">
-                                <Target className="h-4 w-4 text-amber-600" />
-                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Gaps</h4>
+                                <Target className="h-4 w-4" style={{ color: "var(--paper-accent)" }} />
+                                <h4
+                                  style={{
+                                    fontSize: 17,
+                                    fontWeight: 700,
+                                    color: "var(--paper-text-1)",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  SCORE BREAKDOWN
+                                </h4>
                               </div>
-                              <div className="space-y-1.5">
-                                {r.gaps.map((g, i) => (
-                                  <div key={i} className="flex items-start gap-2 bg-amber-50 rounded-lg px-3 py-2">
-                                    <XCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                    <span className="text-sm text-amber-800">{g}</span>
+                              <div className="flex justify-center mb-4">
+                                <RadarChart
+                                  skills={r.breakdown.skillsMatch}
+                                  experience={r.breakdown.experienceMatch}
+                                  education={r.breakdown.educationMatch}
+                                  culture={r.breakdown.cultureFitMatch}
+                                  size={180}
+                                />
+                              </div>
+                              <div className="space-y-3">
+                                <ScoreBar score={r.breakdown.skillsMatch} label="Skills Match" />
+                                <ScoreBar score={r.breakdown.experienceMatch} label="Experience" />
+                                <ScoreBar score={r.breakdown.educationMatch} label="Education" />
+                                <ScoreBar score={r.breakdown.cultureFitMatch} label="Culture Fit" />
+                              </div>
+                              <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1.5px solid var(--paper-border)" }}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <Shield className="h-4 w-4" style={{ color: "#7C3AED" }} />
+                                    <span style={{ fontSize: 16, fontWeight: 600, color: "var(--paper-text-2)" }}>
+                                      AI Confidence
+                                    </span>
                                   </div>
-                                ))}
-                                {r.gaps.length === 0 && (
-                                  <p className="text-sm text-gray-400 italic">No significant gaps</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Column 3: AI Reasoning + Actions */}
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <MessageSquare className="h-4 w-4 text-blue-600" />
-                              <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">AI Reasoning</h4>
-                            </div>
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
-                              <p className="text-sm text-blue-900 leading-relaxed">{r.reasoning}</p>
-                            </div>
-
-                            <div className="bg-white rounded-xl border border-gray-200 p-4">
-                              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Recruiter Decision</h4>
-                              <div className="grid grid-cols-3 gap-2">
-                                <button
-                                  onClick={() => handleDecision(r.candidateId, "shortlisted")}
-                                  disabled={decisionBusy}
-                                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition-all flex flex-col items-center gap-1 ${
-                                    r.recruiterDecision === "shortlisted"
-                                      ? "bg-green-600 text-white shadow-md"
-                                      : "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                                  }`}
+                                  <span
+                                    style={{
+                                      fontSize: 17,
+                                      fontWeight: 700,
+                                      color: "#7C3AED",
+                                      fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                                    }}
+                                  >
+                                    {r.confidenceScore}%
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    height: 6,
+                                    background: "var(--paper-radar-grid)",
+                                    borderRadius: 3,
+                                  }}
                                 >
-                                  <CheckCircle className="h-5 w-5" />
-                                  Shortlist
-                                </button>
-                                <button
-                                  onClick={() => handleDecision(r.candidateId, "interview")}
-                                  disabled={decisionBusy}
-                                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition-all flex flex-col items-center gap-1 ${
-                                    r.recruiterDecision === "interview"
-                                      ? "bg-purple-600 text-white shadow-md"
-                                      : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
-                                  }`}
-                                >
-                                  <Calendar className="h-5 w-5" />
-                                  Interview
-                                </button>
-                                <button
-                                  onClick={() => handleDecision(r.candidateId, "rejected")}
-                                  disabled={decisionBusy}
-                                  className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition-all flex flex-col items-center gap-1 ${
-                                    r.recruiterDecision === "rejected"
-                                      ? "bg-red-600 text-white shadow-md"
-                                      : "bg-red-50 text-red-700 hover:bg-red-100 border border-red-200"
-                                  }`}
-                                >
-                                  <XCircle className="h-5 w-5" />
-                                  Reject
-                                </button>
+                                  <div
+                                    style={{
+                                      height: 6,
+                                      background: "#7C3AED",
+                                      borderRadius: 3,
+                                      width: `${r.confidenceScore}%`,
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full mt-3"
-                              onClick={() => router.push(`/candidates/${r.candidateId}`)}
-                            >
-                              View Full Profile <ArrowRight className="h-4 w-4" />
-                            </Button>
+                            {/* Strengths & Gaps */}
+                            <div>
+                              <div className="mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Sparkles className="h-4 w-4" style={{ color: "var(--paper-green)" }} />
+                                  <h4
+                                    style={{
+                                      fontSize: 17,
+                                      fontWeight: 700,
+                                      color: "var(--paper-text-1)",
+                                      letterSpacing: "0.06em",
+                                    }}
+                                  >
+                                    STRENGTHS
+                                  </h4>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {r.strengths.map((s, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex items-start gap-2"
+                                      style={{
+                                        background: "var(--paper-green-soft)",
+                                        border: "1.5px solid rgba(13,148,136,0.25)",
+                                        borderRadius: 5,
+                                        padding: "8px 10px",
+                                      }}
+                                    >
+                                      <CheckCircle
+                                        className="h-4 w-4 mt-0.5 flex-shrink-0"
+                                        style={{ color: "var(--paper-green)" }}
+                                      />
+                                      <span style={{ fontSize: 16, color: "var(--paper-green)" }}>{s}</span>
+                                    </div>
+                                  ))}
+                                  {r.strengths.length === 0 && (
+                                    <p style={{ fontSize: 16, color: "var(--paper-text-4)", fontStyle: "italic" }}>
+                                      No strengths identified
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Target className="h-4 w-4" style={{ color: "var(--paper-amber)" }} />
+                                  <h4
+                                    style={{
+                                      fontSize: 17,
+                                      fontWeight: 700,
+                                      color: "var(--paper-text-1)",
+                                      letterSpacing: "0.06em",
+                                    }}
+                                  >
+                                    GAPS
+                                  </h4>
+                                </div>
+                                <div className="space-y-1.5">
+                                  {r.gaps.map((g, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex items-start gap-2"
+                                      style={{
+                                        background: "var(--paper-amber-soft)",
+                                        border: "1.5px solid rgba(180,83,9,0.25)",
+                                        borderRadius: 5,
+                                        padding: "8px 10px",
+                                      }}
+                                    >
+                                      <XCircle
+                                        className="h-4 w-4 mt-0.5 flex-shrink-0"
+                                        style={{ color: "var(--paper-amber)" }}
+                                      />
+                                      <span style={{ fontSize: 16, color: "var(--paper-amber)" }}>{g}</span>
+                                    </div>
+                                  ))}
+                                  {r.gaps.length === 0 && (
+                                    <p style={{ fontSize: 16, color: "var(--paper-text-4)", fontStyle: "italic" }}>
+                                      No significant gaps
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* AI Reasoning + Actions */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <MessageSquare className="h-4 w-4" style={{ color: "var(--paper-accent)" }} />
+                                <h4
+                                  style={{
+                                    fontSize: 17,
+                                    fontWeight: 700,
+                                    color: "var(--paper-text-1)",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  AI REASONING
+                                </h4>
+                              </div>
+                              <div
+                                style={{
+                                  background: "var(--paper-accent-soft)",
+                                  border: "1.5px solid var(--paper-border-acc)",
+                                  borderRadius: 5,
+                                  padding: 12,
+                                  marginBottom: 14,
+                                }}
+                              >
+                                <p style={{ fontSize: 16, color: "var(--paper-text-2)", lineHeight: 1.5 }}>
+                                  {r.reasoning}
+                                </p>
+                              </div>
+
+                              <PaperCard padding="p-3">
+                                <h4
+                                  style={{
+                                    fontSize: 16,
+                                    fontWeight: 700,
+                                    color: "var(--paper-text-3)",
+                                    letterSpacing: "0.06em",
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  RECRUITER DECISION
+                                </h4>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {[
+                                    {
+                                      key: "shortlisted",
+                                      icon: CheckCircle,
+                                      label: "Shortlist",
+                                      color: "var(--paper-green)",
+                                      bg: "var(--paper-green-soft)",
+                                    },
+                                    {
+                                      key: "interview",
+                                      icon: Calendar,
+                                      label: "Interview",
+                                      color: "var(--paper-accent)",
+                                      bg: "var(--paper-accent-soft)",
+                                    },
+                                    {
+                                      key: "rejected",
+                                      icon: XCircle,
+                                      label: "Reject",
+                                      color: "var(--paper-red)",
+                                      bg: "var(--paper-red-soft)",
+                                    },
+                                  ].map((d) => {
+                                    const isActive = r.recruiterDecision === d.key;
+                                    return (
+                                      <button
+                                        key={d.key}
+                                        onClick={() => handleDecision(r.candidateId, d.key)}
+                                        disabled={decisionBusy}
+                                        style={{
+                                          padding: "10px 6px",
+                                          borderRadius: 5,
+                                          background: isActive ? d.color : d.bg,
+                                          color: isActive ? "#fff" : d.color,
+                                          border: isActive
+                                            ? "2px solid var(--paper-text-1)"
+                                            : `1.5px solid ${d.color}44`,
+                                          fontSize: 17,
+                                          fontWeight: 700,
+                                          cursor: "pointer",
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          alignItems: "center",
+                                          gap: 4,
+                                          fontFamily: "var(--font-caveat), 'Caveat', cursive",
+                                          boxShadow: isActive ? "1px 2px 0 var(--paper-text-1)" : "none",
+                                        }}
+                                      >
+                                        <d.icon className="h-5 w-5" />
+                                        {d.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </PaperCard>
+
+                              <PaperButton
+                                variant="ghost"
+                                size="sm"
+                                className="w-full mt-3"
+                                onClick={() => router.push(`/candidates/${r.candidateId}`)}
+                              >
+                                View Full Profile <ArrowRight className="h-4 w-4" />
+                              </PaperButton>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
     </AppLayout>
