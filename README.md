@@ -5,6 +5,7 @@
 HireSense AI is a production-ready recruitment screening platform that enables recruiters to automatically score, rank, and shortlist job applicants using artificial intelligence — while keeping humans in full control of final hiring decisions.
 
 > **Live Application:** [https://hire-sense-omega.vercel.app](https://hire-sense-omega.vercel.app)
+> **Presentation Deck:** [View Pitch Deck](./presentation/HireSense-Umurava-Hackathon.pptx)
 
 ---
 
