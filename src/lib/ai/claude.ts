@@ -1,3 +1,18 @@
+// ============================================================================
+// CLAUDE API — DISABLED
+// ----------------------------------------------------------------------------
+// Claude is temporarily commented out; HireSense uses Gemini exclusively.
+// The full implementation is preserved below so we can re-enable the
+// Anthropic fallback by uncommenting the block.
+//
+// To re-enable:
+//   1. Uncomment the block below.
+//   2. Remove the two "disabled stub" exports at the bottom of this file.
+//   3. Re-enable the Claude branch in src/lib/ai/provider.ts.
+//   4. Set CLAUDE_API_KEY in .env.local.
+// ============================================================================
+
+/*
 import Anthropic from "@anthropic-ai/sdk";
 
 let client: Anthropic | null = null;
@@ -45,4 +60,16 @@ export async function claudeGenerateJSON(prompt: string, model: "fast" | "smart"
 
 export function isClaudeAvailable(): boolean {
   return !!process.env.CLAUDE_API_KEY;
+}
+*/
+
+// Disabled stubs — present so imports resolve while Claude is turned off.
+// `isClaudeAvailable()` always returns false, so the Claude branch in
+// `provider.ts` (also commented out) can never fire.
+export async function claudeGenerateJSON(_prompt: string, _model: "fast" | "smart" = "fast"): Promise<string> {
+  throw new Error("Claude provider is disabled. Re-enable src/lib/ai/claude.ts to use.");
+}
+
+export function isClaudeAvailable(): boolean {
+  return false;
 }

@@ -1,11 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FunnelScene } from "@/components/paper/FunnelScene";
 import { PaperCard } from "@/components/paper/PaperCard";
 import { PaperButton } from "@/components/paper/PaperButton";
 import { BrandFunnelIcon } from "@/components/paper/BrandFunnelIcon";
+
+/** Formats a raw count into a short social-proof string — e.g. 0 → "0",
+ *  47 → "47", 312 → "300+", 5400 → "5,000+". Rounds down to the nearest
+ *  100 / 1,000 so the displayed number is never higher than the real one. */
+function formatStat(n: number): string {
+  if (n < 100) return String(n);
+  if (n < 1000) return `${Math.floor(n / 100) * 100}+`;
+  const thousands = Math.floor(n / 1000);
+  return `${thousands.toLocaleString()},000+`;
+}
 
 const features = [
   { icon: "◎", title: "AI-Powered Scoring", desc: "Weighted across Skills, Experience, Education, and Culture Fit — recruiter-configurable." },
@@ -39,6 +49,21 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 export default function LandingPage() {
   const [hovF, setHovF] = useState<number | null>(null);
+  const [stats, setStats] = useState<{ totalJobs: number; totalScreenings: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/stats/public")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (cancelled || !body?.success) return;
+        setStats(body.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div
@@ -180,9 +205,9 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-wrap gap-x-8 gap-y-4">
               {[
-                ["300+", "Active jobs"],
-                ["5,000+", "Screened"],
-                ["2× AI", "Gemini + Claude"],
+                [stats ? formatStat(stats.totalJobs) : "—", "Active jobs"],
+                [stats ? formatStat(stats.totalScreenings) : "—", "Screenings"],
+                ["Gemini AI", "Flash + Pro"],
               ].map(([v, l], idx) => (
                 <div
                   key={l}
