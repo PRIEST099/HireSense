@@ -6,6 +6,7 @@ HireSense AI is a production-ready recruitment screening platform that enables r
 
 > **Live Application:** [https://hire-sense-omega.vercel.app](https://hire-sense-omega.vercel.app)
 > **Presentation Deck:** [View Pitch Deck](./presentation/HireSense-Umurava-Hackathon.pptx)
+> **Demo Video:** [Programmatic Remotion Pipeline](./demo-video/) — 2-minute product walkthrough rendered from code
 
 ---
 
