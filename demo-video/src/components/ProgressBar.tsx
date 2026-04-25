@@ -14,9 +14,8 @@ export const ProgressBar: React.FC = () => {
           left: 0,
           width: `${progress}%`,
           height: 4,
-          backgroundColor: colors.accentBright,
-          boxShadow: `0 0 12px ${colors.accentBright}`,
-          transition: "width 0.05s linear",
+          backgroundColor: colors.paperAccent,
+          boxShadow: `0 0 8px ${colors.paperAccentSoft}`,
         }}
       />
     </AbsoluteFill>

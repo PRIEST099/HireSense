@@ -14,7 +14,7 @@ import { ProgressBar } from "./components/ProgressBar";
 
 export const HireSenseDemo: React.FC = () => {
   return (
-    <AbsoluteFill style={{ backgroundColor: colors.bg }}>
+    <AbsoluteFill style={{ backgroundColor: colors.paperBg }}>
       {/* Optional background music — drop a file at public/audio/bgm.mp3 */}
       {/* <Audio src={staticFile("audio/bgm.mp3")} volume={0.15} /> */}
 

@@ -1,41 +1,65 @@
-// HireSense brand theme — used throughout the demo video
+// HireSense paper-sketch theme — matches the actual app design system
+// Source: src/app/globals.css
 
 export const colors = {
-  // Backgrounds
-  bg: "#0A0E1A",            // Deep navy
-  bgElevated: "#141B2D",    // Card backgrounds
-  bgPaper: "#FAF7F2",       // Paper-sketch cream
+  // Backgrounds (cream paper aesthetic)
+  paperBg: "#F7F8FD",
+  paperCard: "#FFFFFF",
+  paperBgSoft: "#FAFBFE",
+
+  // Borders
+  paperBorder: "rgba(80, 110, 200, 0.18)",
+  paperBorderAcc: "rgba(80, 110, 200, 0.45)",
+  paperInk: "rgba(23, 24, 38, 0.85)",
+  paperInkAcc: "rgba(79, 70, 229, 0.9)",
 
   // Text
-  textPrimary: "#FFFFFF",
-  textSecondary: "#A0AEC0",
-  textInk: "#1A1A1A",       // Paper-sketch ink
+  paperText1: "#171826",
+  paperText2: "#3A3D56",
+  paperText3: "#6B6F8A",
+  paperText4: "#9EA2BB",
 
-  // Brand accent
-  accent: "#3B82F6",        // Blue
-  accentBright: "#60A5FA",
-  accentDark: "#1E40AF",
+  // Brand accent (indigo)
+  paperAccent: "#4F46E5",
+  paperAccentSoft: "rgba(79, 70, 229, 0.1)",
+  paperAccentBright: "#6366F1",
 
-  // Score colors
-  scoreHigh: "#10B981",     // Green 80+
-  scoreMid: "#F59E0B",      // Amber 60-79
-  scoreLow: "#EF4444",      // Red <60
+  // Status colors
+  paperGreen: "#0D9488",
+  paperGreenSoft: "rgba(13, 148, 136, 0.1)",
+  paperAmber: "#B45309",
+  paperAmberSoft: "rgba(180, 83, 9, 0.1)",
+  paperRed: "#B91C1C",
+  paperRedSoft: "rgba(185, 28, 28, 0.1)",
 
-  // Recommendation colors
-  strongMatch: "#10B981",
-  goodMatch: "#3B82F6",
-  partialMatch: "#F59E0B",
-  weakMatch: "#94A3B8",
+  // Stat card colors
+  statBlue: "#4F46E5",
+  statTeal: "#0D9488",
+  statPurple: "#7C3AED",
+  statAmber: "#B45309",
 
-  // UI
-  border: "#2D3748",
-  shadow: "rgba(0, 0, 0, 0.5)",
+  // Radar
+  radarGrid: "rgba(80, 110, 200, 0.14)",
+
+  // Hook scene (dramatic dark intro only)
+  darkBg: "#0A0E1A",
+  darkAccent: "#6366F1",
 };
 
+export const shadows = {
+  paper: "1px 2px 0 rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06)",
+  paperCard: "2px 3px 0 rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06)",
+  hard: "2px 3px 0 #171826",
+  hardSm: "1px 2px 0 #171826",
+};
+
+// Font family is set once Caveat is loaded — see src/fonts.ts
+import { caveatFontFamily } from "./fonts";
+
 export const fonts = {
-  display: "Inter",
-  body: "Inter",
-  mono: "JetBrains Mono",
+  // Caveat is the brand font — handwritten cursive at 600-700 weight
+  caveat: caveatFontFamily,
+  body: caveatFontFamily,
 };
 
 export const timing = {

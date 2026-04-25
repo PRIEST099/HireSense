@@ -1,13 +1,24 @@
-import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig, interpolate, Img, staticFile } from "remotion";
+import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { colors, fonts } from "../theme";
-import { Caption } from "../components/Caption";
-import { LowerThird } from "../components/LowerThird";
+import { PaperBackground } from "../components/PaperBackground";
+import { PaperCard } from "../components/PaperCard";
+import { PaperBadge } from "../components/PaperBadge";
+import { AppShell } from "../components/AppShell";
 
 const STATS = [
-  { label: "Total Jobs", value: 12, color: colors.accentBright },
-  { label: "Active Jobs", value: 5, color: colors.scoreHigh },
-  { label: "Screenings Run", value: 47, color: colors.scoreMid },
-  { label: "Total Candidates", value: 184, color: "#A78BFA" },
+  { label: "Total Jobs", value: 12, color: colors.statBlue, icon: "📋" },
+  { label: "Active Jobs", value: 5, color: colors.statTeal, icon: "📈" },
+  { label: "Screenings Run", value: 28, color: colors.statPurple, icon: "🧠" },
+  { label: "Total Candidates", value: 73, color: colors.statAmber, icon: "👥" },
+];
+
+const JOBS = [
+  { title: "Senior Software Engineer", company: "Apex Consulting Group", location: "Kigali, Rwanda", skills: 9, status: "open" as const },
+  { title: "Product Manager", company: "Irembo", location: "Kigali, Rwanda", skills: 7, status: "screening" as const },
+  { title: "Data Engineer", company: "Bank of Kigali", location: "Kigali, Rwanda", skills: 8, status: "open" as const },
+  { title: "Frontend Developer", company: "MTN Rwanda", location: "Kigali, Rwanda", skills: 6, status: "draft" as const },
+  { title: "DevOps Engineer", company: "CloudScale Africa", location: "Remote", skills: 10, status: "screening" as const },
+  { title: "ML Engineer", company: "AfriMarket", location: "Nairobi, Kenya", skills: 8, status: "open" as const },
 ];
 
 export const DashboardScene: React.FC = () => {
@@ -15,102 +26,191 @@ export const DashboardScene: React.FC = () => {
   const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: colors.bg }}>
-      {/* If you have a screenshot, uncomment: */}
-      {/* <Img src={staticFile("screenshots/dashboard.png")} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> */}
-
-      {/* Animated stat cards (used as overlay or standalone) */}
-      <div
-        style={{
-          padding: 80,
-          paddingTop: 140,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: fonts.display,
-            fontSize: 44,
-            fontWeight: 700,
-            color: colors.textPrimary,
-            marginBottom: 12,
-          }}
-        >
-          Recruiter Dashboard
-        </div>
-        <div
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 22,
-            color: colors.textSecondary,
-            marginBottom: 56,
-          }}
-        >
-          Every job, every candidate, every screening — at a glance.
+    <PaperBackground>
+      <AppShell activePath="/dashboard">
+        {/* Page header */}
+        <div style={{ marginBottom: 28 }}>
+          <h1
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 48,
+              fontWeight: 700,
+              color: colors.paperText1,
+              letterSpacing: -1,
+              lineHeight: 1.05,
+            }}
+          >
+            Dashboard
+          </h1>
+          <p
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 22,
+              color: colors.paperText3,
+              marginTop: 4,
+            }}
+          >
+            Overview of your recruitment activity.
+          </p>
         </div>
 
+        {/* Stats grid */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 32,
+            gap: 16,
+            marginBottom: 28,
           }}
         >
           {STATS.map((stat, i) => {
-            const enter = spring({
-              frame: frame - i * 12,
-              fps,
-              config: { damping: 14, stiffness: 100 },
-            });
             const value = Math.floor(
-              interpolate(frame - i * 12, [0, 60], [0, stat.value], {
+              interpolate(frame, [10 + i * 6, 50 + i * 6], [0, stat.value], {
                 extrapolateLeft: "clamp",
                 extrapolateRight: "clamp",
               })
             );
             return (
-              <div
-                key={stat.label}
-                style={{
-                  opacity: enter,
-                  transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
-                  background: colors.bgElevated,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 16,
-                  padding: 32,
-                  boxShadow: `0 12px 48px rgba(0,0,0,0.4)`,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: fonts.body,
-                    fontSize: 18,
-                    color: colors.textSecondary,
-                    marginBottom: 16,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  {stat.label}
+              <PaperCard key={stat.label} delay={i * 6} padding={20}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 6,
+                      border: `1.5px solid ${stat.color}33`,
+                      background: `${stat.color}14`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 24,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: fonts.caveat,
+                        fontSize: 38,
+                        fontWeight: 700,
+                        color: colors.paperText1,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {value}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: fonts.caveat,
+                        fontSize: 18,
+                        color: colors.paperText3,
+                        marginTop: 2,
+                      }}
+                    >
+                      {stat.label}
+                    </div>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontFamily: fonts.display,
-                    fontSize: 80,
-                    fontWeight: 800,
-                    color: stat.color,
-                    lineHeight: 1,
-                  }}
-                >
-                  {value}
-                </div>
-              </div>
+              </PaperCard>
             );
           })}
         </div>
-      </div>
 
-      <LowerThird label="Recruiter Dashboard" delay={20} />
-      <Caption text="One screen. Total visibility." position="bottom" delay={120} size="md" />
-    </AbsoluteFill>
+        {/* Recent jobs heading */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.paperText1,
+            }}
+          >
+            Recent Jobs
+          </h2>
+        </div>
+
+        {/* Recent jobs grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 16,
+          }}
+        >
+          {JOBS.map((job, i) => (
+            <PaperCard key={job.title} delay={50 + i * 8} padding={20}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: fonts.caveat,
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: colors.paperText1,
+                    lineHeight: 1.2,
+                    flex: 1,
+                  }}
+                >
+                  {job.title}
+                </h3>
+                <PaperBadge
+                  variant={
+                    job.status === "open"
+                      ? "success"
+                      : job.status === "screening"
+                      ? "accent"
+                      : "default"
+                  }
+                  delay={70 + i * 8}
+                >
+                  {job.status === "open" ? "Open" : job.status === "screening" ? "Screening" : "Draft"}
+                </PaperBadge>
+              </div>
+              <p
+                style={{
+                  fontFamily: fonts.caveat,
+                  fontSize: 18,
+                  color: colors.paperText3,
+                  marginBottom: 8,
+                }}
+              >
+                {job.company} · {job.location}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontFamily: fonts.caveat,
+                  fontSize: 17,
+                  color: colors.paperText4,
+                }}
+              >
+                <span>{job.skills} required skills</span>
+                <span>·</span>
+                <span>Apr 2026</span>
+              </div>
+            </PaperCard>
+          ))}
+        </div>
+      </AppShell>
+    </PaperBackground>
   );
 };

@@ -1,200 +1,252 @@
-import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { colors, fonts } from "../theme";
-import { Caption } from "../components/Caption";
-import { LowerThird } from "../components/LowerThird";
+import { PaperBackground } from "../components/PaperBackground";
+import { PaperCard } from "../components/PaperCard";
+import { PaperBadge } from "../components/PaperBadge";
+import { ScoreRing } from "../components/ScoreRing";
+import { RadarChart } from "../components/RadarChart";
 
 const CANDIDATES = [
   {
     name: "Emmanuel N.",
-    score: 94,
+    location: "Kampala, UG",
     rank: 1,
-    color: colors.scoreHigh,
+    score: 94,
     skills: 96,
     exp: 92,
     edu: 88,
     culture: 95,
+    rec: "Strong Match" as const,
+    variant: "success" as const,
   },
   {
     name: "Amina U.",
-    score: 89,
+    location: "Kigali, RW",
     rank: 2,
-    color: colors.accentBright,
+    score: 89,
     skills: 91,
     exp: 88,
     edu: 90,
     culture: 87,
+    rec: "Strong Match" as const,
+    variant: "success" as const,
   },
   {
     name: "Patrick N.",
-    score: 85,
+    location: "Kigali, RW",
     rank: 3,
-    color: colors.scoreMid,
+    score: 85,
     skills: 86,
     exp: 84,
     edu: 87,
     culture: 84,
+    rec: "Good Match" as const,
+    variant: "accent" as const,
   },
 ];
 
 export const ComparisonScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   return (
-    <AbsoluteFill style={{ backgroundColor: colors.bg, padding: 80, paddingTop: 100 }}>
-      <div
-        style={{
-          fontFamily: fonts.display,
-          fontSize: 44,
-          fontWeight: 700,
-          color: colors.textPrimary,
-          marginBottom: 12,
-          textAlign: "center",
-        }}
-      >
-        Compare Top Candidates Side-by-Side
-      </div>
-      <div
-        style={{
-          fontFamily: fonts.body,
-          fontSize: 22,
-          color: colors.textSecondary,
-          marginBottom: 60,
-          textAlign: "center",
-        }}
-      >
-        Trade-offs become instantly clear.
-      </div>
+    <PaperBackground>
+      <div style={{ padding: "60px 80px" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 18,
+              fontWeight: 700,
+              color: colors.paperAccent,
+              letterSpacing: 2,
+              marginBottom: 8,
+            }}
+          >
+            ✦ COMPARE TOP 3
+          </div>
+          <h1
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 52,
+              fontWeight: 700,
+              color: colors.paperText1,
+              letterSpacing: -1,
+              lineHeight: 1.1,
+              marginBottom: 8,
+            }}
+          >
+            Side-by-side comparison
+          </h1>
+          <p
+            style={{
+              fontFamily: fonts.caveat,
+              fontSize: 22,
+              color: colors.paperText3,
+            }}
+          >
+            Trade-offs become instantly clear.
+          </p>
+        </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32 }}>
-        {CANDIDATES.map((c, i) => {
-          const enter = spring({
-            frame: frame - i * 18,
-            fps,
-            config: { damping: 14, stiffness: 100 },
-          });
-          const dimensions = [
-            { label: "Skills", value: c.skills },
-            { label: "Experience", value: c.exp },
-            { label: "Education", value: c.edu },
-            { label: "Culture", value: c.culture },
-          ];
-
-          return (
-            <div
+        {/* Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+          {CANDIDATES.map((c, i) => (
+            <PaperCard
               key={c.name}
-              style={{
-                opacity: enter,
-                transform: `translateY(${interpolate(enter, [0, 1], [40, 0])}px)`,
-                background: colors.bgElevated,
-                border: `2px solid ${i === 0 ? colors.accentBright : colors.border}`,
-                borderRadius: 20,
-                padding: 32,
-                position: "relative",
-              }}
+              delay={i * 12}
+              padding={24}
+              accentBorder={i === 0}
+              style={{ position: "relative" }}
             >
               {/* Rank badge */}
               <div
                 style={{
                   position: "absolute",
-                  top: -16,
+                  top: -14,
                   left: 24,
-                  background: c.color,
-                  color: "#fff",
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  fontFamily: fonts.display,
-                  fontSize: 14,
-                  fontWeight: 800,
-                  letterSpacing: 1,
+                  background: i === 0 ? colors.paperAccent : colors.paperCard,
+                  color: i === 0 ? "#fff" : colors.paperText1,
+                  border: `1.5px solid ${colors.paperInk}`,
+                  fontFamily: fonts.caveat,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  padding: "4px 12px",
+                  borderRadius: 4,
+                  boxShadow: "1px 2px 0 #171826",
                 }}
               >
                 #{c.rank}
               </div>
 
+              {/* Avatar + name */}
               <div
                 style={{
-                  fontFamily: fonts.display,
-                  fontSize: 26,
-                  fontWeight: 700,
-                  color: colors.textPrimary,
-                  marginTop: 12,
-                  marginBottom: 24,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  marginTop: 8,
+                  marginBottom: 16,
                 }}
               >
-                {c.name}
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    background: colors.paperAccent,
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: fonts.caveat,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    border: `1.5px solid ${colors.paperInk}`,
+                  }}
+                >
+                  {c.name.split(" ").map((n) => n[0]).join("")}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: fonts.caveat,
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: colors.paperText1,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {c.name}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: fonts.caveat,
+                      fontSize: 16,
+                      color: colors.paperText3,
+                    }}
+                  >
+                    {c.location}
+                  </div>
+                </div>
               </div>
 
-              <div
-                style={{
-                  fontFamily: fonts.mono,
-                  fontSize: 64,
-                  fontWeight: 800,
-                  color: c.color,
-                  textAlign: "center",
-                  lineHeight: 1,
-                  marginBottom: 32,
-                }}
-              >
-                {Math.floor(
-                  interpolate(frame - i * 18, [0, 45], [0, c.score], {
-                    extrapolateLeft: "clamp",
-                    extrapolateRight: "clamp",
-                  })
-                )}
+              {/* Score ring */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                <ScoreRing score={c.score} size={110} delay={i * 12 + 5} duration={40} />
               </div>
 
-              {dimensions.map((d, j) => {
+              {/* Recommendation */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                <PaperBadge variant={c.variant} size="md" delay={i * 12 + 20}>
+                  {c.rec}
+                </PaperBadge>
+              </div>
+
+              {/* Radar */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                <RadarChart
+                  skills={c.skills}
+                  experience={c.exp}
+                  education={c.edu}
+                  culture={c.culture}
+                  size={180}
+                  delay={i * 12 + 15}
+                />
+              </div>
+
+              {/* Stat lines */}
+              {[
+                { label: "Skills", v: c.skills },
+                { label: "Experience", v: c.exp },
+                { label: "Education", v: c.edu },
+                { label: "Culture", v: c.culture },
+              ].map((d, j) => {
                 const w = interpolate(
-                  frame - 30 - i * 18 - j * 6,
-                  [0, 30],
-                  [0, d.value],
+                  frame,
+                  [50 + i * 12 + j * 3, 80 + i * 12 + j * 3],
+                  [0, d.v],
                   { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
                 );
                 return (
-                  <div key={d.label} style={{ marginBottom: 14 }}>
+                  <div key={d.label} style={{ marginBottom: 6 }}>
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        fontFamily: fonts.body,
-                        fontSize: 16,
-                        color: colors.textSecondary,
-                        marginBottom: 6,
+                        fontFamily: fonts.caveat,
+                        fontSize: 15,
+                        color: colors.paperText2,
                       }}
                     >
                       <span>{d.label}</span>
-                      <span style={{ fontFamily: fonts.mono, fontWeight: 700 }}>
+                      <span style={{ fontWeight: 700, color: colors.paperAccent }}>
                         {Math.round(w)}
                       </span>
                     </div>
                     <div
                       style={{
-                        height: 8,
-                        background: colors.border,
-                        borderRadius: 4,
-                        overflow: "hidden",
+                        height: 5,
+                        background: "rgba(80, 110, 200, 0.12)",
+                        borderRadius: 3,
                       }}
                     >
                       <div
                         style={{
                           width: `${w}%`,
                           height: "100%",
-                          background: c.color,
-                          borderRadius: 4,
+                          background: colors.paperAccent,
+                          borderRadius: 3,
                         }}
                       />
                     </div>
                   </div>
                 );
               })}
-            </div>
-          );
-        })}
+            </PaperCard>
+          ))}
+        </div>
       </div>
-
-      <LowerThird label="Compare Top 3" delay={20} />
-      <Caption text="The best choice becomes obvious." position="bottom" delay={200} size="md" />
-    </AbsoluteFill>
+    </PaperBackground>
   );
 };
